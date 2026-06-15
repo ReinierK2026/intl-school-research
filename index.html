@@ -1,993 +1,660 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>International School Sector — Risk Intelligence Dashboard</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1" integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ" crossorigin="anonymous"></script>
-  <style>
-    :root {
-      --navy: #0f1b2d;
-      --navy-mid: #1a2e4a;
-      --navy-light: #243b55;
-      --gold: #d4a017;
-      --gold-light: #fff4cc;
-      --gold-border: #f0c040;
-      --red: #c0392b;
-      --orange: #d35400;
-      --yellow: #d4a017;
-      --green: #27ae60;
-      --blue: #2980b9;
-      --bg: #f0f2f5;
-      --card: #ffffff;
-      --text: #1a1a2e;
-      --muted: #6b7280;
-      --border: #e5e7eb;
-      --radius: 10px;
-      --gap: 16px;
-      --shadow: 0 2px 8px rgba(0,0,0,0.08);
-    }
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:var(--bg); color:var(--text); line-height:1.6; }
-
-    /* ── Header ── */
-    .header {
-      background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%);
-      color:#fff; padding:24px 32px; border-bottom:3px solid var(--gold);
-    }
-    .header-inner { max-width:1300px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
-    .header h1 { font-size:22px; font-weight:700; letter-spacing:-0.3px; }
-    .header h1 span { color:var(--gold); }
-    .header-meta { font-size:12px; color:rgba(255,255,255,0.55); margin-top:3px; }
-    .header-badge { background:rgba(212,160,23,0.2); border:1px solid var(--gold); color:var(--gold); padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600; }
-
-    /* ── Tabs ── */
-    .tabs-bar { background:var(--navy-mid); padding:0 32px; border-bottom:1px solid rgba(255,255,255,0.1); }
-    .tabs-inner { max-width:1300px; margin:0 auto; display:flex; gap:4px; }
-    .tab-btn {
-      padding:14px 22px; font-size:14px; font-weight:600; color:rgba(255,255,255,0.55);
-      border:none; background:transparent; cursor:pointer; border-bottom:3px solid transparent;
-      transition:all 0.2s; white-space:nowrap;
-    }
-    .tab-btn:hover { color:#fff; }
-    .tab-btn.active { color:#fff; border-bottom-color:var(--gold); }
-
-    /* ── Layout ── */
-    .container { max-width:1300px; margin:0 auto; padding:24px 20px; }
-    .tab-panel { display:none; }
-    .tab-panel.active { display:block; }
-
-    /* ── KPI Row ── */
-    .kpi-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:var(--gap); margin-bottom:var(--gap); }
-    .kpi-card { background:var(--card); border-radius:var(--radius); padding:18px 20px; box-shadow:var(--shadow); border-top:3px solid var(--navy-mid); }
-    .kpi-label { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.6px; margin-bottom:4px; }
-    .kpi-value { font-size:26px; font-weight:800; color:var(--navy); margin-bottom:2px; }
-    .kpi-sub { font-size:11px; color:var(--muted); }
-
-    /* ── Risk Badge ── */
-    .risk-badge { display:inline-block; padding:2px 9px; border-radius:12px; font-size:11px; font-weight:700; letter-spacing:0.3px; }
-    .risk-critical { background:#fde8e8; color:var(--red); }
-    .risk-high { background:#fdecd5; color:var(--orange); }
-    .risk-medium { background:#fef9e7; color:#856404; }
-    .risk-low { background:#d4edda; color:#155724; }
-
-    /* ── Chart Grid ── */
-    .chart-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); gap:var(--gap); margin-bottom:var(--gap); }
-    .chart-card { background:var(--card); border-radius:var(--radius); padding:20px 22px; box-shadow:var(--shadow); }
-    .chart-card h3 { font-size:13px; font-weight:700; color:var(--navy); margin-bottom:14px; text-transform:uppercase; letter-spacing:0.4px; }
-    .chart-card canvas { max-height:260px; }
-
-    /* ── Section card ── */
-    .section-card { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:var(--gap); overflow:hidden; }
-    .section-header { display:flex; align-items:center; justify-content:space-between; padding:14px 20px; cursor:pointer; user-select:none; border-bottom:1px solid var(--border); background:#fafafa; }
-    .section-header:hover { background:#f3f4f6; }
-    .section-title { display:flex; align-items:center; gap:10px; font-size:14px; font-weight:700; color:var(--navy); }
-    .section-toggle { font-size:12px; color:var(--muted); transition:transform 0.2s; }
-    .section-toggle.open { transform:rotate(180deg); }
-    .section-body { padding:0; display:none; }
-    .section-body.open { display:block; }
-
-    /* ── Finding Table ── */
-    .finding-table { width:100%; border-collapse:collapse; font-size:12.5px; }
-    .finding-table thead th { padding:9px 14px; background:#f8f9fa; border-bottom:2px solid var(--border); color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:0.4px; text-align:left; white-space:nowrap; }
-    .finding-table tbody td { padding:9px 14px; border-bottom:1px solid var(--border); vertical-align:top; }
-    .finding-table tbody tr:last-child td { border-bottom:none; }
-    .finding-table tbody tr:hover { background:#f9fafb; }
-    .conf-high { color:var(--green); font-weight:600; }
-    .conf-med { color:var(--yellow); font-weight:600; }
-
-    /* ── Taiwan Relevance Panel ── */
-    .taiwan-panel { background:linear-gradient(135deg,#fffbea 0%,#fff8d6 100%); border:2px solid var(--gold-border); border-radius:var(--radius); padding:20px 24px; margin-bottom:var(--gap); }
-    .taiwan-panel-header { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
-    .taiwan-panel-header h3 { font-size:14px; font-weight:800; color:#7d5a00; text-transform:uppercase; letter-spacing:0.5px; }
-    .taiwan-panel-header .flag { font-size:18px; }
-    .taiwan-items { display:flex; flex-direction:column; gap:10px; }
-    .taiwan-item { background:#fff; border-left:4px solid var(--gold); border-radius:4px; padding:10px 14px; }
-    .taiwan-item-title { font-size:12.5px; font-weight:700; color:var(--navy); margin-bottom:3px; }
-    .taiwan-item-text { font-size:12px; color:#4b4b4b; }
-    .taiwan-item-impact { display:inline-block; font-size:10px; font-weight:700; padding:1px 7px; border-radius:10px; margin-top:4px; }
-    .impact-high { background:#fde8e8; color:var(--red); }
-    .impact-med { background:#fdecd5; color:var(--orange); }
-    .impact-pos { background:#d4edda; color:#155724; }
-
-    /* ── Trend Table ── */
-    .trend-table { width:100%; border-collapse:collapse; font-size:12.5px; }
-    .trend-table th { padding:9px 14px; background:#f8f9fa; border-bottom:2px solid var(--border); color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:0.4px; text-align:left; }
-    .trend-table td { padding:9px 14px; border-bottom:1px solid var(--border); vertical-align:top; }
-    .trend-table tr:last-child td { border-bottom:none; }
-    .horizon-tag { font-size:11px; font-weight:700; padding:2px 8px; border-radius:10px; background:#e8f0fe; color:#1a56db; white-space:nowrap; }
-
-    /* ── Callout box ── */
-    .callout { border-radius:8px; padding:14px 18px; margin:14px 20px; font-size:12.5px; }
-    .callout-red { background:#fde8e8; border-left:4px solid var(--red); }
-    .callout-red strong { color:var(--red); }
-    .callout-blue { background:#e8f4fd; border-left:4px solid var(--blue); }
-
-    /* ── School Table ── */
-    .school-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:var(--gap); padding:20px; }
-    .school-card { border:1px solid var(--border); border-radius:8px; padding:16px; }
-    .school-card h4 { font-size:13px; font-weight:700; color:var(--navy); margin-bottom:8px; }
-    .school-stat { display:flex; justify-content:space-between; font-size:12px; color:var(--muted); padding:3px 0; border-bottom:1px solid #f3f4f6; }
-    .school-stat:last-child { border-bottom:none; }
-    .school-stat span:last-child { font-weight:600; color:var(--text); }
-
-    /* ── Market Status Table ── */
-    .market-table { width:100%; border-collapse:collapse; font-size:12.5px; }
-    .market-table th { padding:9px 14px; background:#f8f9fa; border-bottom:2px solid var(--border); color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:0.4px; text-align:left; }
-    .market-table td { padding:9px 14px; border-bottom:1px solid var(--border); vertical-align:middle; }
-    .market-table tr:last-child td { border-bottom:none; }
-    .market-table tr:hover { background:#f9fafb; }
-
-    /* ── Footer ── */
-    footer { text-align:center; padding:24px 20px; font-size:12px; color:var(--muted); border-top:1px solid var(--border); margin-top:8px; }
-
-    /* ── Responsive ── */
-    @media(max-width:700px) {
-      .header { padding:18px 16px; }
-      .tabs-bar { padding:0 12px; }
-      .container { padding:16px 12px; }
-      .kpi-value { font-size:22px; }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>International Schools — Risk Intelligence Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1" integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ" crossorigin="anonymous"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#f0f2f5;--card:#fff;--header:#0f2027;
+  --accent:#1a6eb5;--text:#1a1a2e;--muted:#5a6a7a;--border:#dde3ec;
+  --red:#c0392b;--orange:#d35400;--yellow:#e67e22;--green:#27ae60;
+  --gap:16px;--r:8px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5}
+.header{background:var(--header);color:#fff;padding:18px 28px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.header h1{font-size:18px;font-weight:700}
+.header-meta{font-size:12px;color:#aab8c8}
+.tabs{display:flex;background:#1c2e40;border-bottom:2px solid #0a1520;padding:0 20px}
+.tab{padding:12px 22px;cursor:pointer;color:#8faec8;font-size:13px;font-weight:600;border-bottom:3px solid transparent;transition:all .2s;white-space:nowrap}
+.tab:hover{color:#d0e4f8}
+.tab.active{color:#fff;border-bottom-color:#4a9fd4}
+.tab-content{display:none;padding:var(--gap) 20px 32px}
+.tab-content.active{display:block}
+.container{max-width:1280px;margin:0 auto}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:var(--gap);margin-bottom:var(--gap)}
+.kpi{background:var(--card);border-radius:var(--r);padding:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,.07);border-left:4px solid var(--accent)}
+.kpi.red{border-left-color:var(--red)}.kpi.orange{border-left-color:var(--orange)}.kpi.green{border-left-color:var(--green)}.kpi.yellow{border-left-color:var(--yellow)}.kpi.grey{border-left-color:#7f8c8d}
+.kpi-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.kpi-value{font-size:22px;font-weight:800;color:var(--text);line-height:1.1}
+.kpi-sub{font-size:11px;color:var(--muted);margin-top:3px}
+.chart-row{display:grid;gap:var(--gap);margin-bottom:var(--gap)}
+.c2{grid-template-columns:1fr 1fr}.c3{grid-template-columns:2fr 1fr}.c1{grid-template-columns:1fr}
+.chart-card{background:var(--card);border-radius:var(--r);padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.07)}
+.chart-card h3{font-size:13px;font-weight:700;color:var(--text);margin-bottom:14px;text-transform:uppercase;letter-spacing:.4px}
+.cw{position:relative;height:260px}.cw.tall{height:360px}.cw.short{height:200px}
+.section{background:var(--card);border-radius:var(--r);padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:var(--gap)}
+.sh{display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none}
+.st{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.stog{font-size:18px;color:var(--muted)}
+.sb{margin-top:14px}.sb.collapsed{display:none}
+.risk{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;margin-left:6px}
+.rc{background:#fde8e8;color:#922b21}.rh{background:#fdebd0;color:#784212}.rm{background:#fef9e7;color:#7d6608}.rl{background:#eafaf1;color:#1e8449}
+.data-table{width:100%;border-collapse:collapse;font-size:12px}
+.data-table th{background:#f8f9fb;color:var(--muted);font-weight:700;text-transform:uppercase;font-size:10px;letter-spacing:.4px;padding:8px 10px;text-align:left;border-bottom:2px solid var(--border)}
+.data-table td{padding:8px 10px;border-bottom:1px solid #eef1f5;vertical-align:top}
+.data-table tr:hover td{background:#f8f9fb}
+.data-table td:first-child{font-weight:600}
+.callout{border-radius:var(--r);padding:16px 18px;margin-bottom:var(--gap)}
+.ct{background:#fff3e0;border-left:4px solid #e67e22}.cg{background:#fdf0f0;border-left:4px solid #c0392b}.ci{background:#e8f4fd;border-left:4px solid #2980b9}
+.callout h4{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px}
+.ct h4{color:#9c5c00}.cg h4{color:#922b21}.ci h4{color:#1a5276}
+.callout ul{list-style:none;padding:0}
+.callout ul li{font-size:12px;padding:3px 0 3px 14px;position:relative}
+.callout ul li::before{content:"→";position:absolute;left:0;color:var(--muted)}
+.trend-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
+.trend-table th{background:#f0f2f5;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:8px 10px;color:var(--muted);text-align:left;border-bottom:2px solid var(--border)}
+.trend-table td{padding:9px 10px;border-bottom:1px solid #eef1f5;vertical-align:top}
+.trend-table tr:hover td{background:#f8f9fb}
+.hor{font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap}
+.hn{background:#fde8e8;color:#922b21}.hs{background:#fdebd0;color:#784212}.hm{background:#fef9e7;color:#7d6608}.hl{background:#eafaf1;color:#1e8449}
+.school-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:4px}
+.sc{background:#f8f9fb;border-radius:6px;padding:14px;border:1px solid var(--border)}
+.sc h4{font-size:13px;font-weight:700;color:var(--accent);margin-bottom:6px}
+.scr{display:flex;justify-content:space-between;font-size:11px;padding:2px 0;border-bottom:1px solid #eef1f5;color:var(--muted)}
+.scr:last-child{border:none}
+.scr span:last-child{font-weight:700;color:var(--text)}
+.em{padding:10px 0;border-bottom:1px solid #eef1f5;font-size:12px}
+.em:last-child{border:none}
+.em strong{display:block;color:var(--text);margin-bottom:2px}
+.em span{color:var(--muted)}
+.footer{text-align:center;font-size:11px;color:var(--muted);padding:18px;border-top:1px solid var(--border);margin-top:8px}
+@media(max-width:768px){.c2,.c3{grid-template-columns:1fr}.kpi-row{grid-template-columns:repeat(2,1fr)}}
+</style>
 </head>
 <body>
 
 <div class="header">
-  <div class="header-inner">
-    <div>
-      <h1>🏫 International School Sector — <span>Risk Intelligence</span></h1>
-      <div class="header-meta">Research date: May 2026 · Sources: ISC Research, ICEF Monitor, Crisis Group, Teach Away, NAFSA, ITFCP and 60+ others</div>
-    </div>
-    <div class="header-badge">Confidential Research</div>
-  </div>
+  <h1>🏫 International Schools — Risk Intelligence Dashboard</h1>
+  <div class="header-meta">Source: web-researcher-schools · 26 May 2026 · Global + APAC + Taiwan sector guides · 58 sources</div>
 </div>
 
-<div class="tabs-bar">
-  <div class="tabs-inner">
-    <button class="tab-btn active" onclick="switchTab('global',this)">🌍 Global</button>
-    <button class="tab-btn" onclick="switchTab('apac',this)">🌏 APAC</button>
-    <button class="tab-btn" onclick="switchTab('taiwan',this)">🇹🇼 Taiwan</button>
-  </div>
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('global',this)">🌍 Global</div>
+  <div class="tab" onclick="switchTab('apac',this)">🌏 Asia-Pacific</div>
+  <div class="tab" onclick="switchTab('taiwan',this)">🇹🇼 Taiwan</div>
 </div>
 
-<!-- ══════════════════════════════════════════════
-     TAB 1 — GLOBAL
-══════════════════════════════════════════════ -->
-<div class="tab-panel active" id="tab-global">
+<!-- ═══ GLOBAL ═══ -->
+<div id="tab-global" class="tab-content active">
 <div class="container">
 
-  <!-- KPIs -->
   <div class="kpi-row">
-    <div class="kpi-card" style="border-top-color:#2980b9">
-      <div class="kpi-label">Schools Worldwide</div>
-      <div class="kpi-value">15,075</div>
-      <div class="kpi-sub">+2% YoY · Jan 2026</div>
-    </div>
-    <div class="kpi-card" style="border-top-color:#27ae60">
-      <div class="kpi-label">Students Enrolled</div>
-      <div class="kpi-value">7.7M</div>
-      <div class="kpi-sub">+13% over 5 years</div>
-    </div>
-    <div class="kpi-card" style="border-top-color:var(--gold)">
-      <div class="kpi-label">Annual Fee Income</div>
-      <div class="kpi-value">$69.3B</div>
-      <div class="kpi-sub">Up from $57B in 2020</div>
-    </div>
-    <div class="kpi-card" style="border-top-color:#8172b3">
-      <div class="kpi-label">Global Staff</div>
-      <div class="kpi-value">730K</div>
-      <div class="kpi-sub">+158K needed by 2028</div>
-    </div>
-    <div class="kpi-card" style="border-top-color:var(--red)">
-      <div class="kpi-label">Teacher Burnout Rate</div>
-      <div class="kpi-value">60%</div>
-      <div class="kpi-sub">Highest ever recorded</div>
-    </div>
-    <div class="kpi-card" style="border-top-color:var(--orange)">
-      <div class="kpi-label">PE-Owned Schools</div>
-      <div class="kpi-value">~40%</div>
-      <div class="kpi-sub">KKR, BPEA EQT, CVC</div>
+    <div class="kpi"><div class="kpi-label">Schools Worldwide</div><div class="kpi-value">15,075</div><div class="kpi-sub">+2% YoY · Jan 2026</div></div>
+    <div class="kpi"><div class="kpi-label">Annual Fee Income</div><div class="kpi-value">$69.3B</div><div class="kpi-sub">Up from ~$57B in 2020</div></div>
+    <div class="kpi"><div class="kpi-label">Students Enrolled</div><div class="kpi-value">7.7M</div><div class="kpi-sub">+13% over 5 years</div></div>
+    <div class="kpi grey"><div class="kpi-label">Teaching Staff</div><div class="kpi-value">730K</div><div class="kpi-sub">158,400 more needed by 2028</div></div>
+    <div class="kpi orange"><div class="kpi-label">Teacher Burnout Rate</div><div class="kpi-value">60%</div><div class="kpi-sub">Considered leaving — highest recorded</div></div>
+    <div class="kpi yellow"><div class="kpi-label">PE Group Affiliated</div><div class="kpi-value">~40%</div><div class="kpi-sub">KKR/Cognita, BPEA EQT, CVC/ISP</div></div>
+  </div>
+
+  <div class="chart-row c2">
+    <div class="chart-card"><h3>School Distribution by Region</h3><div class="cw"><canvas id="g-region"></canvas></div></div>
+    <div class="chart-card"><h3>Risk Level by Category</h3><div class="cw"><canvas id="g-risk"></canvas></div></div>
+  </div>
+
+  <div class="chart-row c2">
+    <div class="chart-card"><h3>US International Student Enrollment Shock</h3><div class="cw short"><canvas id="g-us"></canvas></div></div>
+    <div class="chart-card"><h3>Sector Scale (Key Metrics)</h3><div class="cw short"><canvas id="g-scale"></canvas></div></div>
+  </div>
+
+  <div class="callout ct">
+    <h4>🇹🇼 Taiwan Relevance — Global Risks Impacting Taiwan Schools</h4>
+    <ul>
+      <li>US immigration crackdown directly compresses the American teacher pipeline to Taiwan, where TAS and Morrison depend heavily on US-passport staff</li>
+      <li>60% global teacher burnout rate compounds Taiwan's difficulty attracting staff willing to accept the geopolitical risk premium of a Taiwan posting</li>
+      <li>PE consolidation at 8–14× EBITDA creates competitive disadvantage for Taiwan's independent schools vs. group operators with centralised recruiting and capital</li>
+      <li>70% ESG investor/parent priority: Taiwan's SIR regulatory framework limits ESG-driven rebranding flexibility vs. Singapore or Dubai peers</li>
+      <li>USAID closure erodes US diplomatic and educational engagement that backstops TAS and US-government-linked enrollment in Taipei</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <div class="sh" onclick="tog(this)"><span class="st">💰 Financial Risks<span class="risk rh">High</span></span><span class="stog">▼</span></div>
+    <div class="sb">
+      <table class="data-table"><thead><tr><th>Finding</th><th>Detail</th><th>Source</th><th>Date</th></tr></thead><tbody>
+        <tr><td>Global fee income reaches $69.3B</td><td>Up from ~$57B in 2020 — $12B+ growth in 5 years</td><td>ISC Research / Relocate Magazine</td><td>Feb 2026</td></tr>
+        <tr><td>EBITDA margins 20–35% for premium schools</td><td>3–5 years to breakeven; group-level margins depend on debt servicing</td><td>GSiE</td><td>2025</td></tr>
+        <tr><td>PE valuation multiples 8–14× EBITDA</td><td>Premium assets in supply-constrained markets command upper range</td><td>GSiE / PitchBook</td><td>2025–2026</td></tr>
+        <tr><td>PE consolidation: ~40% of schools group-affiliated</td><td>KKR/Cognita; BPEA EQT $4.3B Nord Anglia take-private; CVC 20% stake in ISP (111 schools, 25 countries)</td><td>Partners Group / CVC / PitchBook</td><td>2025</td></tr>
+        <tr><td>USAID closure → 5–10% enrollment decline risk</td><td>K-12 schools serving USAID contractor families face immediate revenue loss; staffing cuts looming</td><td>TIE Online / School Management Plus</td><td>2025</td></tr>
+        <tr><td>17% drop in new intl students at US institutions (Fall 2025)</td><td>Largest outside pandemic; reverberates into K-12 expat pipelines globally</td><td>NAFSA / Higher Ed Dive</td><td>Nov 2025</td></tr>
+        <tr><td>20% drop in new intl students at US universities (Spring 2026)</td><td>Confirmed by Time, NAFSA; chilling effect on K-12 schools serving US-affiliated communities</td><td>Time / NAFSA</td><td>May 2026</td></tr>
+      </tbody></table>
     </div>
   </div>
 
-  <!-- Charts -->
-  <div class="chart-grid">
-    <div class="chart-card">
-      <h3>Risk Level by Category</h3>
-      <canvas id="chart-global-risk"></canvas>
-    </div>
-    <div class="chart-card">
-      <h3>Global School Distribution by Region</h3>
-      <canvas id="chart-global-geo"></canvas>
-    </div>
-    <div class="chart-card">
-      <h3>US International Student Enrollment Shock</h3>
-      <canvas id="chart-global-students"></canvas>
-    </div>
-  </div>
-
-  <!-- Taiwan Relevance Panel -->
-  <div class="taiwan-panel">
-    <div class="taiwan-panel-header">
-      <span class="flag">🇹🇼</span>
-      <h3>Taiwan Relevance — Global Risks That Directly Impact Taiwan Schools</h3>
-    </div>
-    <div class="taiwan-items">
-      <div class="taiwan-item">
-        <div class="taiwan-item-title">🇺🇸 US Travel Ban (39 countries, Jan 2026) → Chilling effect on American expat postings</div>
-        <div class="taiwan-item-text">The US travel ban expansion and immigration crackdown is reducing the flow of American families into Taiwan postings. TAS and Morrison Academy draw heavily from US-affiliated corporates (tech, government, military). A 10–15% contraction in American expat families would directly compress enrollment at Taiwan's most selective schools.</div>
-        <span class="taiwan-item-impact impact-high">HIGH IMPACT</span>
-      </div>
-      <div class="taiwan-item">
-        <div class="taiwan-item-title">👩‍🏫 US Teacher Pipeline Freeze → Taiwan schools rely on American-trained staff</div>
-        <div class="taiwan-item-text">F/J visa complications, social media screening mandates, and the chilling effect on American educators considering international postings directly constrain Taiwan's international school staffing. US-curriculum schools (TAS, Morrison, Dominican) are most exposed — their accreditation requires qualified US-certified teachers.</div>
-        <span class="taiwan-item-impact impact-high">HIGH IMPACT</span>
-      </div>
-      <div class="taiwan-item">
-        <div class="taiwan-item-title">🔥 60% Teacher Burnout Rate → Compound pressure on Taiwan's thin talent pool</div>
-        <div class="taiwan-item-text">Taiwan already faces difficulty attracting long-contract international staff due to geopolitical uncertainty. The global burnout epidemic means the pool of available, experienced teachers willing to accept Taiwan's risk profile is shrinking on two fronts simultaneously.</div>
-        <span class="taiwan-item-impact impact-high">HIGH IMPACT</span>
-      </div>
-      <div class="taiwan-item">
-        <div class="taiwan-item-title">🏦 PE Consolidation (~40%) → Premium asset opportunity flagged</div>
-        <div class="taiwan-item-text">No major PE operator has entered the Taiwan market. If geopolitical risk stabilises (or is de-risked via TSMC diplomacy), premium assets like TAS-affiliate models could attract group interest. Conversely, independent schools face widening disadvantage vs. group operators in accreditation, staff recruitment, and ESG investment eligibility.</div>
-        <span class="taiwan-item-impact impact-med">MEDIUM IMPACT</span>
-      </div>
-      <div class="taiwan-item">
-        <div class="taiwan-item-title">♻️ ESG Investor Requirements → Taiwan schools less ESG-mature than Singapore/HK peers</div>
-        <div class="taiwan-item-text">70% of parents and investors now prioritise ESG. Taiwan international schools have no equivalent of Singapore's Eco-School pipeline or Nord Anglia's Social Impact Distinctions. As ESG transitions from differentiator to investibility baseline, Taiwan schools may face difficulty attracting international partnership or expansion funding.</div>
-        <span class="taiwan-item-impact impact-med">MEDIUM IMPACT</span>
-      </div>
+  <div class="section">
+    <div class="sh" onclick="tog(this)"><span class="st">👥 People Risks<span class="risk rh">High</span></span><span class="stog">▼</span></div>
+    <div class="sb">
+      <table class="data-table"><thead><tr><th>Finding</th><th>Detail</th><th>Source</th><th>Date</th></tr></thead><tbody>
+        <tr><td>44M teachers needed globally by 2030</td><td>UNESCO / Teacher Task Force; primary and secondary combined</td><td>UNESCO</td><td>2025</td></tr>
+        <tr><td>158,400 more international school teachers needed by 2028</td><td>Assumes pre-pandemic growth recovery</td><td>ISC Research</td><td>2025</td></tr>
+        <tr><td>60% of international teachers considered leaving</td><td>Primary driver: burnout and administrative burden — highest rate recorded</td><td>Teach Away 2026</td><td>2026</td></tr>
+        <tr><td>Retention driven by workplace culture, not compensation</td><td>Schools with mental health support and work-life balance see lower attrition</td><td>Teach Away / ISS</td><td>2026</td></tr>
+        <tr><td>91% of educators prefer schools with in-person licensure programmes</td><td>Top recruitment differentiator in competitive market</td><td>Teach Away 2026</td><td>2026</td></tr>
+        <tr><td>84% value virtual onboarding with human mentor/buddy</td><td>Significant onboarding design implication for school HR teams</td><td>Teach Away 2026</td><td>2026</td></tr>
+        <tr><td>US immigration crackdown freezes American teacher pipeline</td><td>Chilling effect on American teachers working abroad; heightened F/J visa screening and social media checks</td><td>Schrole / HEPI / Fragomen</td><td>2025–2026</td></tr>
+      </tbody></table>
     </div>
   </div>
 
-  <!-- Risk Category Sections -->
-
-  <!-- Financial -->
-  <div class="section-card">
-    <div class="section-header" onclick="toggleSection(this)">
-      <div class="section-title">
-        💰 Financial Risks
-        <span class="risk-badge risk-high">🟠 High</span>
-      </div>
-      <span class="section-toggle">▼</span>
-    </div>
-    <div class="section-body">
-      <table class="finding-table">
-        <thead><tr><th>Finding</th><th>Detail</th><th>Source</th><th>Date</th><th>Conf.</th></tr></thead>
-        <tbody>
-          <tr><td>Global fee income reaches $69.3B</td><td>Up from ~$57B in 2020 — $12B+ growth in 5 years</td><td>ISC Research / Relocate Magazine</td><td>Feb 2026</td><td class="conf-high">High</td></tr>
-          <tr><td>EBITDA margins 20–35% for premium schools</td><td>3–5 years to breakeven; group-level margins depend on central cost structure and debt servicing</td><td>GSiE</td><td>2025</td><td class="conf-high">High</td></tr>
-          <tr><td>PE valuation multiples 8–14× EBITDA</td><td>Premium assets in supply-constrained markets command upper range</td><td>GSiE / PitchBook</td><td>2025–2026</td><td class="conf-high">High</td></tr>
-          <tr><td>PE consolidation: ~40% of schools group-affiliated</td><td>KKR/Cognita; BPEA EQT $4.3B Nord Anglia take-private; CVC 20% stake in ISP</td><td>Partners Group / CVC / PitchBook</td><td>2025</td><td class="conf-high">High</td></tr>
-          <tr><td>ISP reaches 111 schools in 25 countries</td><td>Partners Group + CVC partnership formed to accelerate next growth phase</td><td>Partners Group</td><td>2025</td><td class="conf-high">High</td></tr>
-          <tr><td>USAID closure → 5–10% enrollment decline risk</td><td>K-12 schools serving USAID contractor families face immediate revenue loss</td><td>TIE Online / School Management Plus</td><td>2025</td><td class="conf-high">High</td></tr>
-          <tr><td>20% drop in new international students at US universities</td><td>Confirmed by Time, NAFSA; reverberates into K-12 schools serving US-affiliated communities</td><td>Time / NAFSA</td><td>May 2026</td><td class="conf-high">High</td></tr>
-        </tbody>
-      </table>
+  <div class="section">
+    <div class="sh" onclick="tog(this)"><span class="st">🌐 Geopolitical &amp; Regulatory Risks<span class="risk rc">Critical</span></span><span class="stog">▼</span></div>
+    <div class="sb">
+      <table class="data-table"><thead><tr><th>Finding</th><th>Detail</th><th>Source</th><th>Date</th></tr></thead><tbody>
+        <tr><td>USAID dissolved early 2025</td><td>50% of USAID-dependent NGOs had 100% budget exposure; 14% of for-profits similarly; immediate education funding vacuum</td><td>School Management Plus</td><td>2025</td></tr>
+        <tr><td>UNESCO: 3M additional children out of school by 2027</td><td>Projected consequence of USAID education programme withdrawal</td><td>UNESCO</td><td>2025</td></tr>
+        <tr><td>US travel ban expanded Dec 2025 — 39 countries affected</td><td>19 face complete visa suspension; 15+ face partial F/J/B restrictions from Jan 2026</td><td>White House / Fragomen</td><td>Jan 2026</td></tr>
+        <tr><td>F-1 visas at 3-year low (~95,000 Jan–May 2025)</td><td>Lowest in 3 years; social media screening now mandatory for F-1/J-1/H-1B</td><td>Fragomen / NAFSA</td><td>2025</td></tr>
+        <tr><td>82% of APAC, 47% of European institutions grew intl enrollment</td><td>Students diverted from US finding alternatives; K-12 feeder pipeline benefit for non-US markets</td><td>Brookings / ApplyBoard</td><td>2025–2026</td></tr>
+      </tbody></table>
     </div>
   </div>
 
-  <!-- People -->
-  <div class="section-card">
-    <div class="section-header" onclick="toggleSection(this)">
-      <div class="section-title">
-        👩‍🏫 People Risks
-        <span class="risk-badge risk-high">🟠 High</span>
-      </div>
-      <span class="section-toggle">▼</span>
-    </div>
-    <div class="section-body">
-      <table class="finding-table">
-        <thead><tr><th>Finding</th><th>Detail</th><th>Source</th><th>Date</th><th>Conf.</th></tr></thead>
-        <tbody>
-          <tr><td>44M teachers needed globally by 2030</td><td>UNESCO/Teacher Task Force; primary and secondary combined</td><td>UNESCO</td><td>2025</td><td class="conf-high">High</td></tr>
-          <tr><td>158,400 more international school teachers needed by 2028</td><td>Assumes pre-pandemic growth recovery</td><td>ISC Research</td><td>2025</td><td class="conf-high">High</td></tr>
-          <tr><td>60% of international teachers have considered leaving</td><td>Primary driver: burnout and administrative burden — highest rate recorded</td><td>Teach Away 2026</td><td>2026</td><td class="conf-high">High</td></tr>
-          <tr><td>Retention driven by workplace culture, not compensation</td><td>Schools with mental health support and work-life balance see lower attrition</td><td>Teach Away / ISS</td><td>2026</td><td class="conf-high">High</td></tr>
-          <tr><td>91% of educators prefer schools with in-person licensure programmes</td><td>Top recruitment differentiator in a competitive market</td><td>Teach Away 2026</td><td>2026</td><td class="conf-high">High</td></tr>
-          <tr><td>US immigration crackdown freezes American teacher pipeline</td><td>Chilling effect on American teachers working abroad; heightened screening for F/J visa holders</td><td>Schrole / Fragomen</td><td>2025–2026</td><td class="conf-high">High</td></tr>
-          <tr><td>OECD confirms multi-country teacher shortage</td><td>Education at a Glance 2025 documents severity across OECD members</td><td>OECD</td><td>2025</td><td class="conf-high">High</td></tr>
-        </tbody>
-      </table>
+  <div class="section">
+    <div class="sh" onclick="tog(this)"><span class="st">🛡️ Safeguarding &amp; Child Protection<span class="risk rh">High</span></span><span class="stog">▼</span></div>
+    <div class="sb">
+      <table class="data-table"><thead><tr><th>Finding</th><th>Detail</th><th>Source</th><th>Date</th></tr></thead><tbody>
+        <tr><td>ITFCP Safeguarding Governance Resource Pack 2025</td><td>Board/Owner tools for strategic oversight of child protection; practical implementation guidance</td><td>ITFCP / ICMEC</td><td>Jan 2025</td></tr>
+        <tr><td>External Consultant Screening: background checks within 18 months now mandated</td><td>Criminal background checks + references from prior organisations required</td><td>ITFCP / ICMEC</td><td>Jun 2025</td></tr>
+        <tr><td>ITFCP coalition now 100+ volunteers</td><td>School leaders, counsellors, law enforcement, medical community</td><td>CIS / ITFCP</td><td>2025</td></tr>
+        <tr><td>Online/social media harms: growing CP risk category</td><td>ITFCP workshops flag digital harm alongside traditional child protection risks</td><td>ITFCP</td><td>2025</td></tr>
+        <tr><td>Cross-jurisdictional legal complexity</td><td>Local mandatory reporting laws vs. international norms — compliance gaps for group operators</td><td>CIS / RSAcademics</td><td>2025</td></tr>
+      </tbody></table>
     </div>
   </div>
 
-  <!-- Geopolitical -->
-  <div class="section-card">
-    <div class="section-header" onclick="toggleSection(this)">
-      <div class="section-title">
-        🌐 Geopolitical &amp; Regulatory Risks
-        <span class="risk-badge risk-critical">🔴 Critical</span>
-      </div>
-      <span class="section-toggle">▼</span>
-    </div>
-    <div class="section-body">
-      <div class="callout callout-red">
-        <strong>⚠️ Escalation Alert:</strong> The US immigration shock (travel ban + USAID dissolution + F-1 at 3-year low) represents the most severe external geopolitical shock to the international school sector since COVID-19.
-      </div>
-      <table class="finding-table">
-        <thead><tr><th>Finding</th><th>Detail</th><th>Source</th><th>Date</th><th>Conf.</th></tr></thead>
-        <tbody>
-          <tr><td>USAID dissolved early 2025</td><td>50% of USAID-dependent NGOs had 100% budget exposure; immediate funding vacuum</td><td>School Management Plus</td><td>2025</td><td class="conf-high">High</td></tr>
-          <tr><td>UNESCO: 3M additional children out of school by 2027</td><td>Projected consequence of USAID education programme withdrawal</td><td>UNESCO</td><td>2025</td><td class="conf-high">High</td></tr>
-          <tr><td>US travel ban expanded Dec 2025</td><td>39 countries affected; 19 face complete visa suspension; 15+ face partial F/J/B restrictions</td><td>White House / Fragomen</td><td>Jan 2026</td><td class="conf-high">High</td></tr>
-          <tr><td>US new international student enrollment down 20%</td><td>Largest recorded single-semester decline; chilling K-12 expat family pipelines</td><td>Time / NAFSA</td><td>May 2026</td><td class="conf-high">High</td></tr>
-          <tr><td>F-1 visas at 3-year low</td><td>~95,000 F-1 visas Jan–May 2025; lowest in 3 years</td><td>Fragomen / NAFSA</td><td>2025</td><td class="conf-high">High</td></tr>
-          <tr><td>APAC and European institutions gaining diverted students</td><td>82% of APAC institutions, 47% of European institutions grew international undergraduate enrollment</td><td>Brookings / ApplyBoard</td><td>2025–2026</td><td class="conf-high">High</td></tr>
-        </tbody>
-      </table>
+  <div class="section">
+    <div class="sh" onclick="tog(this)"><span class="st">🌱 ESG / Sustainability Risks<span class="risk rm">Medium</span></span><span class="stog">▼</span></div>
+    <div class="sb">
+      <table class="data-table"><thead><tr><th>Finding</th><th>Detail</th><th>Source</th><th>Date</th></tr></thead><tbody>
+        <tr><td>70% of parents and investors prioritise ESG policies</td><td>Investment and enrollment decisions now linked to sustainability posture</td><td>GSiE / Deloitte</td><td>2024–2025</td></tr>
+        <tr><td>ESG compliance influences investment eligibility</td><td>UN SDG alignment increasingly required for institutional investment rounds</td><td>GSiE / UN SDGs</td><td>2025</td></tr>
+        <tr><td>Nord Anglia pursuing Social Impact Distinctions</td><td>Group-level ESG positioning linked to enrollment uplift and brand loyalty</td><td>Nord Anglia / PRN</td><td>2024</td></tr>
+        <tr><td>Majority of Globeducate schools Eco-School certified</td><td>Eco-School accreditation becoming table stakes at premium tier</td><td>Globeducate</td><td>2025</td></tr>
+        <tr><td>36% of schools now offer bilingual provision</td><td>Curriculum diversification now a competitive necessity; schools diversifying pathways to retain local families</td><td>ISC Research</td><td>Feb 2026</td></tr>
+      </tbody></table>
     </div>
   </div>
 
-  <!-- ESG -->
-  <div class="section-card">
-    <div class="section-header" onclick="toggleSection(this)">
-      <div class="section-title">
-        ♻️ ESG / Sustainability Risks
-        <span class="risk-badge risk-medium">🟡 Medium</span>
-      </div>
-      <span class="section-toggle">▼</span>
-    </div>
-    <div class="section-body">
-      <table class="finding-table">
-        <thead><tr><th>Finding</th><th>Detail</th><th>Source</th><th>Date</th><th>Conf.</th></tr></thead>
-        <tbody>
-          <tr><td>70% of parents and investors prioritise ESG policies</td><td>Investment and enrollment decisions now linked to sustainability posture</td><td>GSiE / Deloitte</td><td>2024–2025</td><td class="conf-high">High</td></tr>
-          <tr><td>ESG compliance influences investment eligibility</td><td>UN SDG alignment increasingly required for institutional investment</td><td>GSiE / UN SDGs</td><td>2025</td><td class="conf-high">High</td></tr>
-          <tr><td>Nord Anglia pursuing Social Impact Distinctions</td><td>Group-level ESG positioning; increased enrollment and brand loyalty</td><td>Nord Anglia / PRN</td><td>2024</td><td class="conf-high">High</td></tr>
-          <tr><td>Majority of Globeducate schools Eco-School certified</td><td>Eco-School accreditation becoming table stakes at premium tier</td><td>Globeducate</td><td>2025</td><td class="conf-med">Med</td></tr>
-        </tbody>
-      </table>
+  <div class="section">
+    <div class="sh" onclick="tog(this)"><span class="st">📅 Trend Horizon</span><span class="stog">▼</span></div>
+    <div class="sb">
+      <table class="trend-table"><thead><tr><th>Horizon</th><th>Key Trend</th><th>Implication for Schools</th></tr></thead><tbody>
+        <tr><td><span class="hor hn">Now &lt;30d</span></td><td>US immigration crackdown reaches K-12 via expat family exit and teacher pipeline freeze</td><td>Reforecast 2026–27 enrollment now; model 5%, 10%, 15% expat decline scenarios</td></tr>
+        <tr><td><span class="hor hs">1–6 months</span></td><td>USAID-dependent school closures; competitive teacher recruitment season</td><td>Diversify recruitment pipelines; accelerate onboarding programme design</td></tr>
+        <tr><td><span class="hor hm">6–18 months</span></td><td>PE two-speed market: group operators vs. independent schools</td><td>Independent schools face investment, accreditation and staff disadvantage; review affiliation strategy</td></tr>
+        <tr><td><span class="hor hl">18+ months</span></td><td>Local families become majority globally; ESG and bilingual provision are baseline</td><td>Schools that haven't pivoted from expat dependency face structural irrelevance</td></tr>
+      </tbody></table>
     </div>
   </div>
 
-  <!-- Safeguarding -->
-  <div class="section-card">
-    <div class="section-header" onclick="toggleSection(this)">
-      <div class="section-title">
-        🛡️ Safeguarding &amp; Child Protection
-        <span class="risk-badge risk-high">🟠 High</span>
-      </div>
-      <span class="section-toggle">▼</span>
-    </div>
-    <div class="section-body">
-      <table class="finding-table">
-        <thead><tr><th>Finding</th><th>Detail</th><th>Source</th><th>Date</th><th>Conf.</th></tr></thead>
-        <tbody>
-          <tr><td>ITFCP Safeguarding Governance Resource Pack 2025</td><td>Board/Owner tools for strategic oversight of child protection; practical implementation guidance</td><td>ITFCP / ICMEC</td><td>Jan 2025</td><td class="conf-high">High</td></tr>
-          <tr><td>External consultant screening mandate</td><td>Criminal background checks within last 18 months + references from prior organisations now required</td><td>ITFCP / ICMEC</td><td>Jun 2025</td><td class="conf-high">High</td></tr>
-          <tr><td>Cross-jurisdictional legal complexity</td><td>Local mandatory reporting laws vs. international norms — compliance gaps for group operators</td><td>CIS / RSAcademics</td><td>2025</td><td class="conf-med">Med</td></tr>
-          <tr><td>Online/social media harms escalating</td><td>ITFCP workshops flag digital harm as growing child protection risk category</td><td>ITFCP</td><td>2025</td><td class="conf-med">Med</td></tr>
-        </tbody>
-      </table>
+  <div class="section">
+    <div class="sh" onclick="tog(this)"><span class="st">⚡ Emerging Developments (Last 30 Days)</span><span class="stog">▼</span></div>
+    <div class="sb">
+      <div class="em"><strong>US international student enrollment down 20% (Spring 2026)</strong><span>Time, 12 May 2026 — Largest single-semester decline recorded outside pandemic; reverberating into K-12 expat family pipelines globally.</span></div>
+      <div class="em"><strong>ISC Research Visual White Paper (May 2026)</strong><span>New geographic mapping of global IS growth; Western Asia and Southeast Asia flagged as highest-growth corridors.</span></div>
+      <div class="em"><strong>CVC acquires 20% stake in International Schools Partnership</strong><span>111 schools, 25 countries; backed by Partners Group + CVC — further PE consolidation at scale.</span></div>
+      <div class="em"><strong>60% teacher burnout consideration rate confirmed</strong><span>Teach Away 2026 report — highest recorded for the sector; burnout now the primary retention threat.</span></div>
+      <div class="em"><strong>ITFCP Safeguarding Briefings (Jun 2025)</strong><span>Safeguarding Data &amp; Record Keeping + External Consultant Screening now in active Board governance circulation; 18-month background check mandate in effect.</span></div>
     </div>
   </div>
 
-  <!-- Trend Analysis Global -->
-  <div class="section-card">
-    <div class="section-header" onclick="toggleSection(this)">
-      <div class="section-title">📅 Trend Horizon Analysis</div>
-      <span class="section-toggle">▼</span>
-    </div>
-    <div class="section-body open">
-      <table class="trend-table">
-        <thead><tr><th>Horizon</th><th>Key Trend</th><th>Implication for Schools</th></tr></thead>
-        <tbody>
-          <tr><td><span class="horizon-tag">Now &lt;30d</span></td><td>US immigration crackdown reaches K-12 via expat family exit and teacher pipeline freeze</td><td>Reforecast 2026–27 enrollment now; model 5%, 10%, 15% expat decline scenarios</td></tr>
-          <tr><td><span class="horizon-tag">1–6 months</span></td><td>USAID-dependent school closures; competitive teacher recruitment season</td><td>Diversify recruitment pipelines; accelerate onboarding programme design</td></tr>
-          <tr><td><span class="horizon-tag">6–18 months</span></td><td>PE two-speed market: group operators vs. independent schools</td><td>Independent schools face investment, accreditation and staff disadvantage</td></tr>
-          <tr><td><span class="horizon-tag">18+ months</span></td><td>Local families become majority globally; ESG and bilingual provision are baseline</td><td>Schools that haven't pivoted from expat dependency face structural irrelevance</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-</div><!-- /container -->
-</div><!-- /tab-global -->
+</div></div>
 
 
-<!-- ══════════════════════════════════════════════
-     TAB 2 — APAC
-══════════════════════════════════════════════ -->
-<div class="tab-panel" id="tab-apac">
+<!-- ═══ APAC ═══ -->
+<div id="tab-apac" class="tab-content">
 <div class="container">
 
-  <!-- KPIs -->
   <div class="kpi-row">
-    <div class="kpi-card" style="border-top-color:#2980b9">
-      <div class="kpi-label">APAC Share of Global</div>
-      <div class="kpi-value">58%</div>
-      <div class="kpi-sub">~8,744 of 15,075 schools</div>
-    </div>
-    <div class="kpi-card" style="border-top-color:var(--green)">
-      <div class="kpi-label">SEA + W.Asia 5yr Growth</div>
-      <div class="kpi-value">+11%</div>
-      <div class="kpi-sub">Each sub-region; highest globally</div>
-    </div>
-    <div class="kpi-card" style="border-top-color:var(--red)">
-      <div class="kpi-label">SEA Teacher Shortage</div>
-      <div class="kpi-value">4.5M</div>
-      <div class="kpi-sub">Regional figure, ADB 2025</div>
-    </div>
-    <div class="kpi-card" style="border-top-color:var(--gold)">
-      <div class="kpi-label">UAE New Schools Pipeline</div>
-      <div class="kpi-value">36</div>
-      <div class="kpi-sub">+7% school growth; highest globally</div>
-    </div>
-    <div class="kpi-card" style="border-top-color:#8172b3">
-      <div class="kpi-label">APAC HE Intl Enrollment</div>
-      <div class="kpi-value">82%</div>
-      <div class="kpi-sub">Institutions growing vs. US decline</div>
-    </div>
-    <div class="kpi-card" style="border-top-color:#c0392b">
-      <div class="kpi-label">China Accredited IS</div>
-      <div class="kpi-value">972</div>
-      <div class="kpi-sub">No new IS allowed for compulsory years</div>
+    <div class="kpi"><div class="kpi-label">Schools in Asia</div><div class="kpi-value">8,744</div><div class="kpi-sub">58% of 15,075 global total</div></div>
+    <div class="kpi green"><div class="kpi-label">SEA + W Asia Growth</div><div class="kpi-value">+11%</div><div class="kpi-sub">Each sub-region · 5-year period</div></div>
+    <div class="kpi red"><div class="kpi-label">China Accredited IS</div><div class="kpi-value">972</div><div class="kpi-sub">157 expat-only · No new schools for compulsory years</div></div>
+    <div class="kpi orange"><div class="kpi-label">SEA Teacher Shortage</div><div class="kpi-value">4.5M</div><div class="kpi-sub">Regional figure · ADB 2025</div></div>
+    <div class="kpi green"><div class="kpi-label">UAE School Growth</div><div class="kpi-value">+7%</div><div class="kpi-sub">36 new schools planned · Highest pipeline globally</div></div>
+    <div class="kpi yellow"><div class="kpi-label">Vietnam Teacher Permits</div><div class="kpi-value">+22%</div><div class="kpi-sub">YoY licensed foreign English teacher permits 2025</div></div>
+  </div>
+
+  <div class="chart-row c2">
+    <div class="chart-card"><h3>APAC Country Risk Landscape</h3><div class="cw tall"><canvas id="a-country"></canvas></div></div>
+    <div class="chart-card"><h3>Singapore vs Malaysia Fee Comparison (USD approx)</h3><div class="cw"><canvas id="a-fees"></canvas></div><p style="font-size:11px;color:var(--muted);margin-top:10px">KL fees 30–40% lower than Singapore equivalents. Cross-border attendance growing. Source: Doris School / iSchoolAdvisor 2026.</p></div>
+  </div>
+
+  <div class="callout ct">
+    <h4>🇹🇼 Taiwan Relevance — APAC Risks Impacting Taiwan Schools</h4>
+    <ul>
+      <li>China market stalling + regulatory cap: expats previously based in Shanghai/Beijing may relocate to Taipei, temporarily boosting Taiwan enrollment — but elevated cross-strait tension cuts the other way</li>
+      <li>SE Asia teacher shortage of 4.5M drives APAC-wide competition for English-speaking teachers, pushing up compensation expectations at TAS and Morrison</li>
+      <li>82% of APAC HE institutions growing intl enrollment: Taiwan's top universities benefit from US student diversion, strengthening the K-12 feeder case for Taiwan international schools</li>
+      <li>Vietnam +22% teacher permit growth directly competes with Taiwan for the same Western-qualified teacher supply pool</li>
+      <li>China TNE 800K→8M enrollment target: structural competition for Western-curriculum IS demand across the region, including Taiwan-based Chinese national students</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <div class="sh" onclick="tog(this)"><span class="st">🏆 Competitive Landscape by Market</span><span class="stog">▼</span></div>
+    <div class="sb">
+      <table class="data-table"><thead><tr><th>Market</th><th>Status</th><th>Key Dynamic</th><th>Risk</th></tr></thead><tbody>
+        <tr><td>🇨🇳 China</td><td>Stalling</td><td>Regulatory cap on new IS; 972 schools; Western expat exodus; overseas textbook ban</td><td><span class="risk rc">Critical</span></td></tr>
+        <tr><td>🇸🇬 Singapore</td><td>Premium / Saturated</td><td>Fee inflation driving crossborder families to Malaysia; limited new capacity</td><td><span class="risk rm">Medium</span></td></tr>
+        <tr><td>🇲🇾 Malaysia (KL)</td><td>Growing</td><td>40+ schools; fees 30–40% below Singapore; fast-growing local demand</td><td><span class="risk rl">Low–Medium</span></td></tr>
+        <tr><td>🇦🇪 UAE (Dubai/Abu Dhabi)</td><td>Boom</td><td>+7% growth; 36 planned schools; search interest +90% YoY; highest pipeline globally</td><td><span class="risk rl">Low</span></td></tr>
+        <tr><td>🇯🇵 Japan</td><td>Stable</td><td>Established expat hubs (Tokyo/Osaka/Nagoya); NLCS Kobe satellite opening Aug 2025</td><td><span class="risk rm">Medium</span></td></tr>
+        <tr><td>🇰🇷 South Korea</td><td>Stable</td><td>Corporate expat demand (Samsung/Hyundai/LG); Seoul IS on global top schools list</td><td><span class="risk rm">Medium</span></td></tr>
+        <tr><td>🇻🇳 Vietnam</td><td>Growing</td><td>+22% foreign teacher permits YoY; demand outpacing supply</td><td><span class="risk rm">Medium</span></td></tr>
+        <tr><td>🇮🇩 Indonesia</td><td>High-growth</td><td>ISC flagged as top-3 growth market; rigid termination laws add regulatory complexity</td><td><span class="risk rm">Medium</span></td></tr>
+        <tr><td>🇮🇳 India</td><td>Growing</td><td>+2% school growth; aspirational local family demand driving bilingual/intl-curriculum schools</td><td><span class="risk rm">Medium</span></td></tr>
+        <tr><td>🇰🇿 Kazakhstan</td><td>Emerging</td><td>ISC flagged as top-3 growth market alongside UAE and Indonesia</td><td><span class="risk rl">Low–Medium</span></td></tr>
+      </tbody></table>
     </div>
   </div>
 
-  <!-- Charts -->
-  <div class="chart-grid">
-    <div class="chart-card">
-      <h3>Market Status by Key Country</h3>
-      <canvas id="chart-apac-market"></canvas>
-    </div>
-    <div class="chart-card">
-      <h3>Malaysia vs. Singapore Fee Comparison (USD/yr)</h3>
-      <canvas id="chart-apac-fees"></canvas>
-    </div>
-  </div>
-
-  <!-- Taiwan Relevance Panel -->
-  <div class="taiwan-panel">
-    <div class="taiwan-panel-header">
-      <span class="flag">🇹🇼</span>
-      <h3>Taiwan Relevance — APAC Risks &amp; Opportunities for Taiwan Schools</h3>
-    </div>
-    <div class="taiwan-items">
-      <div class="taiwan-item">
-        <div class="taiwan-item-title">📉 East Asia Stalling (China flat, HK softening) → Taiwan competes for same expat pool</div>
-        <div class="taiwan-item-text">As China's international school market stagnates and Hong Kong remains politically uncertain, mobile expat families that previously chose Beijing/Shanghai or Hong Kong may re-evaluate Taiwan as an alternative. Taiwan's stable regulatory environment and competitive fee positioning (vs. SG/HK/Tokyo) are genuine advantages — but geopolitical risk remains the key deterrent.</div>
-        <span class="taiwan-item-impact impact-pos">POTENTIAL OPPORTUNITY</span>
-      </div>
-      <div class="taiwan-item">
-        <div class="taiwan-item-title">🎓 APAC Absorbing US-Diverted Students (82% HE growth) → Positive for Taiwan TSMC ecosystem</div>
-        <div class="taiwan-item-text">As APAC higher-education institutions capture students diverted from US universities, the broader APAC ecosystem becomes more attractive for tech-sector families. Taiwan's TSMC and semiconductor supply chain is a magnet for high-value expat families who are now more likely to stay in Asia rather than route through the US. This supports stable enrollment at TAS and Morrison.</div>
-        <span class="taiwan-item-impact impact-pos">POSITIVE SIGNAL</span>
-      </div>
-      <div class="taiwan-item">
-        <div class="taiwan-item-title">🇨🇳 China TNE Expansion (800K→8M enrollments) → Long-term structural competition</div>
-        <div class="taiwan-item-text">Beijing's transnational education expansion represents a decade-long structural competitive threat. While direct impact on Taiwan's Western-curriculum schools is low in the near term, Taiwanese families considering mainland partnerships or Chinese nationals in Taiwan may increasingly look to China's growing Western-affiliated programmes.</div>
-        <span class="taiwan-item-impact impact-med">MEDIUM TERM RISK</span>
-      </div>
-      <div class="taiwan-item">
-        <div class="taiwan-item-title">🏛️ Host-Country Nationalism (Singapore, Vietnam, Indonesia reforming) → Taiwan's SIR framework a comparative advantage</div>
-        <div class="taiwan-item-text">Singapore (Jun 2025), Vietnam, China, Indonesia, and Thailand are all tightening beneficial ownership and local-hire regulations for international schools. Taiwan's Schools for International Residents (SIR) framework has remained stable with no major 2025 changes, making it comparatively predictable for operators and investors.</div>
-        <span class="taiwan-item-impact impact-pos">RELATIVE ADVANTAGE</span>
-      </div>
-      <div class="taiwan-item">
-        <div class="taiwan-item-title">✈️ China Corporate Relocation → Some families may consider Taiwan as alternative posting</div>
-        <div class="taiwan-item-text">China's regulatory cap on new international schools (no new IS for compulsory years) means multinationals with growing China operations face a constrained international school supply for their families. Some firms — particularly in semiconductor, EV, and advanced manufacturing — may route assignees through Taiwan instead, generating incremental demand for Taipei schools.</div>
-        <span class="taiwan-item-impact impact-pos">INCREMENTAL OPPORTUNITY</span>
-      </div>
+  <div class="section">
+    <div class="sh" onclick="tog(this)"><span class="st">📊 Market &amp; Competitive Risks<span class="risk rm">Medium overall</span><span class="risk rc">Critical in China</span></span><span class="stog">▼</span></div>
+    <div class="sb">
+      <table class="data-table"><thead><tr><th>Finding</th><th>Detail</th><th>Source</th><th>Date</th></tr></thead><tbody>
+        <tr><td>58% of global international schools in Asia</td><td>~8,744 of 15,075 global schools</td><td>ISC Research</td><td>Feb 2026</td></tr>
+        <tr><td>Western Asia + Southeast Asia each +11% over 5 years</td><td>Highest-growth sub-regions globally</td><td>ISC Research / ICEF Monitor</td><td>Feb 2026</td></tr>
+        <tr><td>East Asia stalling</td><td>China and HK market growth flatlined; growth shifting to SEA, South Asia, Gulf</td><td>ISC Research</td><td>2025</td></tr>
+        <tr><td>China: no new IS for compulsory education years</td><td>Regulatory cap imposed; overseas textbook use also restricted; 972 accredited schools</td><td>The PIE News / Hurun</td><td>2025</td></tr>
+        <tr><td>UAE: +7% school growth; 36 planned new schools</td><td>Highest pipeline of any single market; Dubai continuing to outperform expectations (+90% search interest YoY)</td><td>ISC Research / GSiE</td><td>2025–2026</td></tr>
+        <tr><td>Singapore vs Malaysia: 30–40% fee premium in Singapore</td><td>KL primary avg MYR 50–75K/yr vs SG equivalent ~SGD 35K/yr; crossborder attendance growing</td><td>Doris School / iSchoolAdvisor</td><td>2025–2026</td></tr>
+        <tr><td>APAC absorbing students diverted from US</td><td>82% of APAC higher-ed institutions grew international enrollment</td><td>Brookings / ApplyBoard</td><td>2025–2026</td></tr>
+        <tr><td>China TNE expansion: 800K → 8M enrollments (decade target)</td><td>Structural competition for Western-curriculum international schools across Asia</td><td>The PIE News</td><td>2025–2026</td></tr>
+      </tbody></table>
     </div>
   </div>
 
-  <!-- Market Landscape -->
-  <div class="section-card">
-    <div class="section-header" onclick="toggleSection(this)">
-      <div class="section-title">🗺️ Competitive Landscape by Market</div>
-      <span class="section-toggle open">▼</span>
-    </div>
-    <div class="section-body open">
-      <table class="market-table">
-        <thead><tr><th>Market</th><th>Status</th><th>Key Dynamic</th><th>Risk Level</th></tr></thead>
-        <tbody>
-          <tr><td><strong>🇨🇳 China</strong></td><td>Stalling</td><td>Regulatory cap on new IS; 972 schools; Western expat exodus; overseas textbook ban</td><td><span class="risk-badge risk-critical">🔴 Critical</span></td></tr>
-          <tr><td><strong>🇸🇬 Singapore</strong></td><td>Premium / Saturated</td><td>Fee inflation driving crossborder to Malaysia; limited new capacity</td><td><span class="risk-badge risk-medium">🟡 Medium</span></td></tr>
-          <tr><td><strong>🇲🇾 Malaysia (KL)</strong></td><td>Growing</td><td>40+ schools; 30–40% below Singapore fees; fast-growing local demand</td><td><span class="risk-badge risk-low">🟢 Low–Medium</span></td></tr>
-          <tr><td><strong>🇦🇪 UAE (Dubai/Abu Dhabi)</strong></td><td>Boom</td><td>+7% growth; 36 planned schools; highest pipeline globally</td><td><span class="risk-badge risk-low">🟢 Low</span></td></tr>
-          <tr><td><strong>🇯🇵 Japan</strong></td><td>Stable</td><td>Established expat hubs; NLCS Kobe satellite opening Aug 2025</td><td><span class="risk-badge risk-medium">🟡 Medium</span></td></tr>
-          <tr><td><strong>🇰🇷 South Korea</strong></td><td>Stable</td><td>Corporate expat demand (Samsung/Hyundai/LG); Seoul IS on global top list</td><td><span class="risk-badge risk-medium">🟡 Medium</span></td></tr>
-          <tr><td><strong>🇻🇳 Vietnam</strong></td><td>Growing</td><td>+22% YoY foreign teacher permits; demand outpacing supply</td><td><span class="risk-badge risk-medium">🟡 Medium</span></td></tr>
-          <tr><td><strong>🇮🇩 Indonesia</strong></td><td>High-Growth</td><td>ISC top-3 growth market; rigid termination laws add HR complexity</td><td><span class="risk-badge risk-medium">🟡 Medium</span></td></tr>
-          <tr><td><strong>🇮🇳 India</strong></td><td>Growing</td><td>+2% school growth; aspirational local family demand</td><td><span class="risk-badge risk-medium">🟡 Medium</span></td></tr>
-          <tr><td><strong>🇰🇿 Kazakhstan</strong></td><td>Emerging</td><td>ISC flagged as top-3 growth market alongside UAE and Indonesia</td><td><span class="risk-badge risk-low">🟢 Low–Medium</span></td></tr>
-          <tr style="background:#fff9e6"><td><strong>🇹🇼 Taiwan</strong></td><td>Stable / Constrained</td><td>16 schools; supply-constrained; geopolitical tail risk; TSMC ecosystem anchor</td><td><span class="risk-badge risk-medium">🟡 Medium</span></td></tr>
-        </tbody>
-      </table>
+  <div class="section">
+    <div class="sh" onclick="tog(this)"><span class="st">👥 People Risks<span class="risk rh">High</span></span><span class="stog">▼</span></div>
+    <div class="sb">
+      <table class="data-table"><thead><tr><th>Finding</th><th>Detail</th><th>Source</th><th>Date</th></tr></thead><tbody>
+        <tr><td>Southeast Asia teacher shortage: 4.5 million</td><td>Regional figure; compounds global shortage of 44M by 2030</td><td>ADB / Teacher Task Force</td><td>2025</td></tr>
+        <tr><td>Vietnam: +22% YoY licensed foreign English teacher work permits</td><td>Positive policy signal; demand growing faster than supply</td><td>TEFL Institute / Edvectus</td><td>2025</td></tr>
+        <tr><td>Visa and work permit complexity varies by country</td><td>Indonesia (rigid termination laws), Vietnam (labour quotas), Thailand — distinct regulatory hurdles per market</td><td>Airswift / Inogen</td><td>2025</td></tr>
+        <tr><td>APAC hiring volumes at or above 2019 levels</td><td>Post-pandemic recovery complete; sustained demand across SEA</td><td>TEFL Institute</td><td>2026</td></tr>
+        <tr><td>US immigration crackdown reduces American teacher pipeline</td><td>Chilling effect on American educators considering international postings; F/J visa complications</td><td>Fragomen / HEPI</td><td>2025–2026</td></tr>
+        <tr><td>Cambodia severe teacher shortage</td><td>National-level crisis; policy gaps for contract teachers</td><td>ADB</td><td>2025</td></tr>
+      </tbody></table>
     </div>
   </div>
 
-  <!-- People -->
-  <div class="section-card">
-    <div class="section-header" onclick="toggleSection(this)">
-      <div class="section-title">
-        👩‍🏫 People Risks
-        <span class="risk-badge risk-high">🟠 High</span>
-      </div>
-      <span class="section-toggle">▼</span>
-    </div>
-    <div class="section-body">
-      <table class="finding-table">
-        <thead><tr><th>Finding</th><th>Detail</th><th>Source</th><th>Date</th><th>Conf.</th></tr></thead>
-        <tbody>
-          <tr><td>Southeast Asia teacher shortage: 4.5 million</td><td>Regional figure; compounds global shortage of 44M by 2030</td><td>ADB / Teacher Task Force</td><td>2025</td><td class="conf-high">High</td></tr>
-          <tr><td>Vietnam: +22% YoY in licensed foreign teacher work permits</td><td>Positive policy signal; demand growing faster than supply</td><td>TEFL Institute / Edvectus</td><td>2025</td><td class="conf-high">High</td></tr>
-          <tr><td>US immigration crackdown reduces American teacher pipeline</td><td>Chilling effect on American educators; F/J visa complications affect APAC placements</td><td>Fragomen / HEPI</td><td>2025–2026</td><td class="conf-high">High</td></tr>
-          <tr><td>Cambodia severe teacher shortage</td><td>National-level crisis; policy gaps for contract teachers</td><td>ADB</td><td>2025</td><td class="conf-med">Med</td></tr>
-        </tbody>
-      </table>
+  <div class="section">
+    <div class="sh" onclick="tog(this)"><span class="st">🌐 Geopolitical &amp; Regulatory Risks<span class="risk rh">High</span></span><span class="stog">▼</span></div>
+    <div class="sb">
+      <table class="data-table"><thead><tr><th>Finding</th><th>Detail</th><th>Source</th><th>Date</th></tr></thead><tbody>
+        <tr><td>China curriculum and textbook restrictions tightening</td><td>No new IS for compulsory years; overseas textbooks banned; expat-only schools restricted to 157</td><td>The PIE News / Hurun</td><td>2025</td></tr>
+        <tr><td>China shifting students away from US study</td><td>Chinese students redirecting from US → indirect opportunity for APAC international schools</td><td>The PIE News / ICEF</td><td>2025–2026</td></tr>
+        <tr><td>APAC host-country nationalism increasing</td><td>Curriculum restrictions, local-hire mandates, beneficial ownership reform (Singapore Jun 2025; Vietnam, China, Indonesia, Thailand reforming)</td><td>Inogen / Lexology</td><td>2025</td></tr>
+        <tr><td>US immigration policy: chilling effect on expat families</td><td>Travel ban expansion (Jan 2026), 39 countries affected; expat families reconsidering Asian postings</td><td>Fragomen / White House</td><td>2026</td></tr>
+      </tbody></table>
     </div>
   </div>
 
-  <!-- Geopolitical APAC -->
-  <div class="section-card">
-    <div class="section-header" onclick="toggleSection(this)">
-      <div class="section-title">
-        🌐 Geopolitical &amp; Regulatory Risks
-        <span class="risk-badge risk-high">🟠 High</span>
-      </div>
-      <span class="section-toggle">▼</span>
-    </div>
-    <div class="section-body">
-      <table class="finding-table">
-        <thead><tr><th>Finding</th><th>Detail</th><th>Source</th><th>Date</th><th>Conf.</th></tr></thead>
-        <tbody>
-          <tr><td>China curriculum and textbook restrictions tightening</td><td>No new IS for compulsory years; overseas textbooks banned; expat-only schools restricted to 157</td><td>The PIE News / Hurun</td><td>2025</td><td class="conf-high">High</td></tr>
-          <tr><td>China TNE expansion plan: 800K → 8M enrollments</td><td>Major structural competition for Western-curriculum international schools across Asia</td><td>The PIE News</td><td>2025–2026</td><td class="conf-med">Med</td></tr>
-          <tr><td>Host-country nationalism increasing</td><td>Singapore Jun 2025; Vietnam, China later 2025; Indonesia, Thailand reforming beneficial ownership rules</td><td>Inogen / Lexology</td><td>2025</td><td class="conf-med">Med</td></tr>
-          <tr><td>US travel ban: chilling effect on expat families</td><td>39 countries affected; expat families associated with US multinationals reconsidering Asian postings</td><td>Fragomen / White House</td><td>2026</td><td class="conf-high">High</td></tr>
-          <tr><td>APAC positioned as safe alternative to US study</td><td>82% of APAC HE institutions growing international enrollment; K-12 feeder pipeline benefit</td><td>Brookings / ApplyBoard</td><td>2025–2026</td><td class="conf-med">Med</td></tr>
-        </tbody>
-      </table>
+  <div class="section">
+    <div class="sh" onclick="tog(this)"><span class="st">📅 Trend Horizon</span><span class="stog">▼</span></div>
+    <div class="sb">
+      <table class="trend-table"><thead><tr><th>Horizon</th><th>Key Trend</th><th>Implication for Schools</th></tr></thead><tbody>
+        <tr><td><span class="hor hn">Now &lt;30d</span></td><td>US immigration shock redirecting APAC higher-ed demand</td><td>K-12 schools in APAC should position for feeder pipeline benefit from US student diversion</td></tr>
+        <tr><td><span class="hor hs">1–6 months</span></td><td>Vietnam, Indonesia rapid growth; teacher supply constrained</td><td>APAC operators must build local/regional teacher pipelines; cannot rely on US-origin staff</td></tr>
+        <tr><td><span class="hor hm">6–18 months</span></td><td>China market cap permanent; East Asia operators must pivot</td><td>Operators in China/HK should plan for structural decline; consider SEA/Gulf redeployment</td></tr>
+        <tr><td><span class="hor hl">18+ months</span></td><td>China TNE as structural competitor; local-family dominant market</td><td>Western-curriculum schools must invest in local-language integration and culturally resonant curriculum</td></tr>
+      </tbody></table>
     </div>
   </div>
 
-  <!-- Trend Analysis APAC -->
-  <div class="section-card">
-    <div class="section-header" onclick="toggleSection(this)">
-      <div class="section-title">📅 Trend Horizon Analysis</div>
-      <span class="section-toggle">▼</span>
-    </div>
-    <div class="section-body">
-      <table class="trend-table">
-        <thead><tr><th>Horizon</th><th>Key Trend</th><th>Implication for Schools</th></tr></thead>
-        <tbody>
-          <tr><td><span class="horizon-tag">Now &lt;30d</span></td><td>US immigration shock redirecting APAC higher-ed demand</td><td>K-12 schools in APAC should position for feeder pipeline benefit</td></tr>
-          <tr><td><span class="horizon-tag">1–6 months</span></td><td>Vietnam, Indonesia rapid growth; teacher supply constrained</td><td>APAC operators must build local/regional teacher pipelines; cannot rely on US-origin staff</td></tr>
-          <tr><td><span class="horizon-tag">6–18 months</span></td><td>China market cap permanent; East Asia operators must pivot</td><td>Operators in China/HK should plan for structural decline; consider SEA/Gulf redeployment</td></tr>
-          <tr><td><span class="horizon-tag">18+ months</span></td><td>China TNE as structural competitor; local-family dominant market</td><td>Western-curriculum schools must invest in local-language integration and culturally resonant curriculum</td></tr>
-        </tbody>
-      </table>
+  <div class="section">
+    <div class="sh" onclick="tog(this)"><span class="st">⚡ Emerging Developments (Last 30 Days)</span><span class="stog">▼</span></div>
+    <div class="sb">
+      <div class="em"><strong>APAC supply/demand for international HE aligning (ICEF Monitor, Apr 2026)</strong><span>Region becoming destination of choice as US closes; K-12 feeder schools benefit from pipeline redirection.</span></div>
+      <div class="em"><strong>North London Collegiate School Kobe campus set to open Aug 2025</strong><span>Premium brand expansion into Japan shows confidence in APAC fundamentals.</span></div>
+      <div class="em"><strong>China TNE reform plans confirmed</strong><span>Expansion from 800,000 to 8 million transnational enrollments — long-horizon structural competition for Western-curriculum schools.</span></div>
+      <div class="em"><strong>UAE search interest +90% YoY (Jun 2025)</strong><span>Dubai market continuing to outperform expectations despite earlier softening predictions.</span></div>
     </div>
   </div>
 
-</div>
-</div><!-- /tab-apac -->
+</div></div>
 
 
-<!-- ══════════════════════════════════════════════
-     TAB 3 — TAIWAN
-══════════════════════════════════════════════ -->
-<div class="tab-panel" id="tab-taiwan">
+<!-- ═══ TAIWAN ═══ -->
+<div id="tab-taiwan" class="tab-content">
 <div class="container">
 
-  <!-- KPIs -->
   <div class="kpi-row">
-    <div class="kpi-card" style="border-top-color:var(--blue)">
-      <div class="kpi-label">Intl Schools in Taipei</div>
-      <div class="kpi-value">16</div>
-      <div class="kpi-sub">US, IB, British, European curricula</div>
-    </div>
-    <div class="kpi-card" style="border-top-color:var(--navy)">
-      <div class="kpi-label">Western Expat Population</div>
-      <div class="kpi-value">~21K</div>
-      <div class="kpi-sub">Primary enrollment base</div>
-    </div>
-    <div class="kpi-card" style="border-top-color:var(--gold)">
-      <div class="kpi-label">TAS First-Year Cost</div>
-      <div class="kpi-value">US$41K</div>
-      <div class="kpi-sub">NTD 1,300,026 · One of Asia's highest</div>
-    </div>
-    <div class="kpi-card" style="border-top-color:var(--green)">
-      <div class="kpi-label">Taiwan GDP Growth 2025</div>
-      <div class="kpi-value">+7.1%</div>
-      <div class="kpi-sub">TSMC semiconductor cycle</div>
-    </div>
-    <div class="kpi-card" style="border-top-color:var(--red)">
-      <div class="kpi-label">PLA Aircraft (Apr 2026)</div>
-      <div class="kpi-value">202</div>
-      <div class="kpi-sub">145 crossed ADIZ/median line</div>
-    </div>
-    <div class="kpi-card" style="border-top-color:var(--red)">
-      <div class="kpi-label">PLA Naval Vessels</div>
-      <div class="kpi-value">190</div>
-      <div class="kpi-sub">Incl. 1 carrier · Apr 2026</div>
-    </div>
+    <div class="kpi"><div class="kpi-label">Intl Schools in Taipei</div><div class="kpi-value">16</div><div class="kpi-sub">American, IB, British, European curricula</div></div>
+    <div class="kpi"><div class="kpi-label">Western Expat Population</div><div class="kpi-value">~21K</div><div class="kpi-sub">812,603 total foreign residents (3.48%)</div></div>
+    <div class="kpi yellow"><div class="kpi-label">TAS First-Year Cost</div><div class="kpi-value">~US$41K</div><div class="kpi-sub">NTD 1,300,026 · WASC · ~2,400 students</div></div>
+    <div class="kpi green"><div class="kpi-label">Taiwan GDP Growth</div><div class="kpi-value">+7.1%</div><div class="kpi-sub">2025 est. · TSMC semiconductor cycle</div></div>
+    <div class="kpi red"><div class="kpi-label">PLA Aircraft (Apr 2026)</div><div class="kpi-value">202</div><div class="kpi-sub">145 crossed median line / ADIZ</div></div>
+    <div class="kpi orange"><div class="kpi-label">PLA Naval Vessels</div><div class="kpi-value">190</div><div class="kpi-sub">Apr 2026 · incl. 1 aircraft carrier (first transit 2026)</div></div>
   </div>
 
-  <!-- Tail Risk Callout -->
-  <div class="callout callout-red" style="margin:0 0 16px 0; padding:18px 22px; border-radius:10px; border-left-width:5px;">
-    <strong>⚠️ Existential Tail Risk — Rapid Expat Departure Scenario:</strong> A military escalation, even short of full conflict, could trigger multinational duty-of-care evacuation orders, collapsing enrollment at all Taiwan international schools within weeks. Schools should assess business continuity plans, insurance coverage, and staff evacuation protocols immediately. This is the defining low-probability / high-impact risk for this market.
+  <div class="callout cg">
+    <h4>⚠️ Tail Risk — Rapid Expat Departure Scenario</h4>
+    <ul>
+      <li>Military escalation, even short of full conflict, could trigger multinational duty-of-care evacuation orders collapsing enrollment at all Taiwan international schools within weeks</li>
+      <li>202 PLA aircraft detected around Taiwan in April 2026 alone; 145 crossed the median line or entered Taiwan's de facto ADIZ — highest tempo since 2022</li>
+      <li>December 2025 PLA war game: largest since 2022; Beijing exercising blockade and amphibious assault scenarios</li>
+      <li>President Lai's hardening stance and Beijing's hardline response characterised by Crisis Group as "especially fraught" — most tense since inauguration</li>
+      <li>US support increasingly uncertain under Trump II: structural erosion of Taiwan's security guarantees compounds scenario probability</li>
+      <li>NT$300B defense budget stalled in legislature (Oct 2025); KMT blocking raises concerns about Taiwan's readiness</li>
+      <li>Boards should review emergency/evacuation protocols, BCPs, and geopolitical insurance coverage now</li>
+    </ul>
   </div>
 
-  <!-- Charts -->
-  <div class="chart-grid">
-    <div class="chart-card">
-      <h3>Taiwan International School Fee Comparison (USD/yr)</h3>
-      <canvas id="chart-tw-fees"></canvas>
-    </div>
-    <div class="chart-card">
-      <h3>Risk Profile by Category</h3>
-      <canvas id="chart-tw-risk"></canvas>
-    </div>
-    <div class="chart-card">
-      <h3>PLA Military Activity Trend</h3>
-      <canvas id="chart-tw-pla"></canvas>
-    </div>
+  <div class="chart-row c2">
+    <div class="chart-card"><h3>PLA Military Activity Around Taiwan — April 2026</h3><div class="cw short"><canvas id="t-pla"></canvas></div></div>
+    <div class="chart-card"><h3>School Fee Comparison — First Year (USD)</h3><div class="cw short"><canvas id="t-fees"></canvas></div></div>
   </div>
 
-  <!-- School Quick Reference -->
-  <div class="section-card">
-    <div class="section-header" onclick="toggleSection(this)">
-      <div class="section-title">🏫 School Quick Reference</div>
-      <span class="section-toggle open">▼</span>
-    </div>
-    <div class="section-body open">
+  <div class="section">
+    <div class="sh" onclick="tog(this)"><span class="st">🏫 Taiwan School Quick Reference</span><span class="stog">▼</span></div>
+    <div class="sb">
       <div class="school-grid">
-        <div class="school-card">
-          <h4>🇺🇸 Taipei American School (TAS)</h4>
-          <div class="school-stat"><span>Curriculum</span><span>US (AP) + IB</span></div>
-          <div class="school-stat"><span>Students</span><span>~2,400</span></div>
-          <div class="school-stat"><span>First-year cost</span><span>~US$41,000</span></div>
-          <div class="school-stat"><span>Accreditation</span><span>WASC</span></div>
-          <div class="school-stat"><span>Capacity</span><span>Near full — waitlists</span></div>
-          <div class="school-stat"><span>Key risk</span><span>American expat dependency</span></div>
+        <div class="sc"><h4>Taipei American School (TAS)</h4>
+          <div class="scr"><span>Curriculum</span><span>US (AP) + IB</span></div>
+          <div class="scr"><span>Students</span><span>~2,400</span></div>
+          <div class="scr"><span>First-year cost</span><span>~US$41,000</span></div>
+          <div class="scr"><span>NTD cost</span><span>~1,300,026</span></div>
+          <div class="scr"><span>Accreditation</span><span>WASC</span></div>
+          <div class="scr"><span>Capacity</span><span>Near capacity; waitlists</span></div>
         </div>
-        <div class="school-card">
-          <h4>✝️ Morrison Academy</h4>
-          <div class="school-stat"><span>Curriculum</span><span>US-accredited K–12</span></div>
-          <div class="school-stat"><span>Campus</span><span>Linkou (~300 students)</span></div>
-          <div class="school-stat"><span>First-year cost</span><span>~US$19,500</span></div>
-          <div class="school-stat"><span>Founded</span><span>1952</span></div>
-          <div class="school-stat"><span>Campuses</span><span>Multiple across Taiwan</span></div>
-          <div class="school-stat"><span>Key strength</span><span>Most established; affordable</span></div>
+        <div class="sc"><h4>Morrison Academy</h4>
+          <div class="scr"><span>Curriculum</span><span>US-accredited K–12</span></div>
+          <div class="scr"><span>Students (Linkou)</span><span>~300</span></div>
+          <div class="scr"><span>First-year cost</span><span>~US$19,500</span></div>
+          <div class="scr"><span>NTD cost</span><span>~625,500</span></div>
+          <div class="scr"><span>Founded</span><span>1952</span></div>
+          <div class="scr"><span>Campuses</span><span>Multiple</span></div>
         </div>
-        <div class="school-card">
-          <h4>🕊️ Dominican International School</h4>
-          <div class="school-stat"><span>Curriculum</span><span>US Pre-K to Grade 12</span></div>
-          <div class="school-stat"><span>Accreditation</span><span>WASC</span></div>
-          <div class="school-stat"><span>Character</span><span>Catholic; international focus</span></div>
-          <div class="school-stat"><span>Fee range</span><span>NTD 580K–1.25M/yr</span></div>
+        <div class="sc"><h4>Dominican International School</h4>
+          <div class="scr"><span>Curriculum</span><span>US Pre-K–Gr.12</span></div>
+          <div class="scr"><span>Accreditation</span><span>WASC</span></div>
+          <div class="scr"><span>Character</span><span>Catholic</span></div>
+          <div class="scr"><span>Fee range/yr</span><span>NTD 580K–1.25M</span></div>
         </div>
-        <div class="school-card">
-          <h4>🇪🇺 Taipei European School</h4>
-          <div class="school-stat"><span>Curriculum</span><span>European curricula</span></div>
-          <div class="school-stat"><span>Focus</span><span>European expat families</span></div>
-          <div class="school-stat"><span>Fee range</span><span>NTD 580K–1.25M/yr</span></div>
-          <div class="school-stat"><span>Key strength</span><span>Only EU-curriculum option</span></div>
+        <div class="sc"><h4>Taipei European School</h4>
+          <div class="scr"><span>Curriculum</span><span>European curricula</span></div>
+          <div class="scr"><span>Primary community</span><span>European expat families</span></div>
+          <div class="scr"><span>Fee range/yr</span><span>NTD 580K–1.25M</span></div>
         </div>
       </div>
-      <div class="callout callout-blue" style="margin:0 16px 16px">
-        <strong>Data gap:</strong> Precise enrollment figures, capacity utilisation, and nationality breakdowns for most Taiwan international schools are subscription-gated (ISC Research). Figures above rely on Tier 2–3 sources. Tier 1 confirmation recommended.
-      </div>
+      <p style="font-size:11px;color:var(--muted);margin-top:12px">16 international schools total in Taipei. Admissions cycle: apply Oct–Dec for following August. Late applicants risk waitlisting at TAS and over-subscribed schools. Sources: iSchoolAdvisor, International Schools Database 2025–2026.</p>
     </div>
   </div>
 
-  <!-- Geopolitical -->
-  <div class="section-card">
-    <div class="section-header" onclick="toggleSection(this)">
-      <div class="section-title">
-        🌐 Geopolitical Risks
-        <span class="risk-badge risk-critical">🔴 Critical (tail) · 🟡 Medium (operating)</span>
-      </div>
-      <span class="section-toggle open">▼</span>
-    </div>
-    <div class="section-body open">
-      <table class="finding-table">
-        <thead><tr><th>Finding</th><th>Detail</th><th>Source</th><th>Date</th><th>Conf.</th></tr></thead>
-        <tbody>
-          <tr><td>202 PLA aircraft detected around Taiwan (Apr 2026)</td><td>At least 145 crossed the median line or entered Taiwan's de facto ADIZ</td><td>Crisis Group</td><td>Apr 2026</td><td class="conf-high">High</td></tr>
-          <tr><td>190 PLA naval vessels in surrounding waters</td><td>Includes Chinese aircraft carrier transiting Taiwan Strait — first such transit of 2026</td><td>Crisis Group</td><td>Apr 2026</td><td class="conf-high">High</td></tr>
-          <tr><td>December 2025 PLA war game: largest since 2022</td><td>Beijing exercising blockade and amphibious assault scenarios</td><td>Crisis Group / CFR</td><td>Dec 2025</td><td class="conf-high">High</td></tr>
-          <tr><td>President Lai hardening stance</td><td>"Especially fraught" cross-strait relations; rhetoric characterises Taiwan as de facto sovereign state</td><td>Crisis Group</td><td>May 2026</td><td class="conf-high">High</td></tr>
-          <tr><td>US support increasingly uncertain under Trump II</td><td>Trump II administration unpredictability flagged as structural risk for Taiwan's security guarantees</td><td>Crisis Group / CFR</td><td>2025–2026</td><td class="conf-high">High</td></tr>
-          <tr><td>NT$300B defense budget stalled in legislature</td><td>KMT blocking critical defense budgets (Oct 2025); raises concerns about Taiwan's defense readiness</td><td>AEI</td><td>Dec 2025</td><td class="conf-med">Med</td></tr>
-          <tr><td>Taiwan GDP grew +7.1% in 2025 (est.)</td><td>Economy resilient, driven by TSMC/semiconductor sector; expat community stable in tech-adjacent roles</td><td>Coface / GlobalEDGE</td><td>2025</td><td class="conf-med">Med</td></tr>
-          <tr><td>Worsening geopolitical risk softening inbound FDI</td><td>Multinational firms slowing new Taiwan postings; net effect on expat community size uncertain but negative</td><td>Allianz Trade</td><td>2025</td><td class="conf-med">Med</td></tr>
-        </tbody>
-      </table>
+  <div class="section">
+    <div class="sh" onclick="tog(this)"><span class="st">🌐 Geopolitical Risks<span class="risk rc">Critical (tail)</span><span class="risk rm">Medium (operating)</span></span><span class="stog">▼</span></div>
+    <div class="sb">
+      <table class="data-table"><thead><tr><th>Finding</th><th>Detail</th><th>Source</th><th>Date</th></tr></thead><tbody>
+        <tr><td>202 PLA aircraft detected around Taiwan (April 2026)</td><td>At least 145 crossed the median line or entered Taiwan's de facto ADIZ</td><td>Crisis Group</td><td>Apr 2026</td></tr>
+        <tr><td>190 PLA naval vessels in surrounding waters (April 2026)</td><td>Includes Chinese aircraft carrier transiting Taiwan Strait — first such transit of 2026</td><td>Crisis Group</td><td>Apr 2026</td></tr>
+        <tr><td>December 2025 PLA war game: largest since 2022</td><td>Beijing exercising blockade and amphibious assault scenarios</td><td>Crisis Group / CFR</td><td>Dec 2025</td></tr>
+        <tr><td>President Lai hardening stance; relations "especially fraught"</td><td>Rhetoric characterises Taiwan as de facto sovereign state; Beijing maintaining hardline response</td><td>Crisis Group</td><td>May 2026</td></tr>
+        <tr><td>US support increasingly uncertain under Trump II</td><td>Trump II administration unpredictability flagged as structural risk for Taiwan's security guarantees</td><td>Crisis Group / CFR</td><td>2025–2026</td></tr>
+        <tr><td>Legislative gridlock: NT$300B defense budget stalled</td><td>KMT blocking critical defense budgets (Oct 2025); raises concerns about Taiwan's ability to execute commitments</td><td>AEI</td><td>Dec 2025</td></tr>
+        <tr><td>Worsening geopolitical risk softening inbound FDI</td><td>Multinational firms slowing new Taiwan postings; negative trend for expat community growth</td><td>Allianz Trade</td><td>2025</td></tr>
+        <tr><td>Taiwan GDP grew +7.1% in 2025 (est.)</td><td>Economy resilient, driven by TSMC/semiconductor sector; expat community stable in tech-adjacent roles</td><td>Coface / GlobalEDGE</td><td>2025</td></tr>
+        <tr><td>US tariff policy creates additional Taiwan uncertainty</td><td>Taiwan navigating tightrope between US tariff volatility and Chinese economic coercion</td><td>Geopolitical Monitor</td><td>2025</td></tr>
+      </tbody></table>
     </div>
   </div>
 
-  <!-- People -->
-  <div class="section-card">
-    <div class="section-header" onclick="toggleSection(this)">
-      <div class="section-title">
-        👩‍🏫 People Risks
-        <span class="risk-badge risk-high">🟠 High</span>
-      </div>
-      <span class="section-toggle">▼</span>
-    </div>
-    <div class="section-body">
-      <table class="finding-table">
-        <thead><tr><th>Finding</th><th>Detail</th><th>Source</th><th>Date</th><th>Conf.</th></tr></thead>
-        <tbody>
-          <tr><td>US immigration crackdown reduces American teacher pipeline</td><td>American teachers are a major share of staff at US-curriculum schools; F/J visa complications and social media screening are deterrents</td><td>Fragomen / HEPI</td><td>2025–2026</td><td class="conf-high">High</td></tr>
-          <tr><td>Geopolitical risk discourages long-term staff commitment</td><td>Teachers weighing posting duration given cross-strait uncertainty; shorter contracts and reluctance to purchase property</td><td>Assessment</td><td>2026</td><td class="conf-med">Med</td></tr>
-          <tr><td>Limited local teacher pipeline for Western curriculum</td><td>Taiwan domestic teacher training system oriented to national curriculum; international school-qualified local teachers scarce</td><td>Assessment</td><td>2026</td><td class="conf-med">Med</td></tr>
-          <tr><td>Teacher compensation competitive vs SEA peers</td><td>Taiwan's lower cost of living vs Singapore/HK makes packages competitive; however absolute salaries below Gulf markets</td><td>iSchoolAdvisor</td><td>2026</td><td class="conf-med">Med</td></tr>
-        </tbody>
-      </table>
+  <div class="section">
+    <div class="sh" onclick="tog(this)"><span class="st">💰 Financial Risks<span class="risk rm">Medium (operating)</span><span class="risk rc">Critical (geo tail)</span></span><span class="stog">▼</span></div>
+    <div class="sb">
+      <table class="data-table"><thead><tr><th>Finding</th><th>Detail</th><th>Source</th><th>Date</th></tr></thead><tbody>
+        <tr><td>TAS first-year total: NTD ~1,300,026 (~US$41,000)</td><td>For a 4-year-old, includes one-time fees; one of Asia's highest first-year packages</td><td>International Schools Database</td><td>2025–2026</td></tr>
+        <tr><td>Morrison Academy first-year: NTD ~625,500 (~US$19,500)</td><td>For a 5-year-old; significantly lower than TAS</td><td>International Schools Database</td><td>2025–2026</td></tr>
+        <tr><td>General fee range: NTD 580,000–1,250,000/yr (~US$18,000–US$39,000)</td><td>Lower end Early Years; upper end IB Diploma/High School</td><td>iSchoolAdvisor Taipei</td><td>2026</td></tr>
+        <tr><td>More affordable than Singapore, Tokyo, HK</td><td>Genuine competitive advantage for Taipei vs. other APAC premium hubs</td><td>iSchoolAdvisor</td><td>2026</td></tr>
+        <tr><td>Revenue concentration risk: small Western expat base</td><td>~21,000 Western expats; enrollment base concentrated in tech/government/military assignees</td><td>Expat.com / Statista</td><td>2023–2025</td></tr>
+        <tr><td>Taiwan GDP +7.1% in 2025 (est.)</td><td>Economy resilient on TSMC cycle; provides near-term buffer to expat community and school revenue</td><td>Coface / GlobalEDGE</td><td>2025</td></tr>
+      </tbody></table>
     </div>
   </div>
 
-  <!-- Financial -->
-  <div class="section-card">
-    <div class="section-header" onclick="toggleSection(this)">
-      <div class="section-title">
-        💰 Financial Risks
-        <span class="risk-badge risk-medium">🟡 Medium (operating) · 🔴 Critical (tail)</span>
-      </div>
-      <span class="section-toggle">▼</span>
-    </div>
-    <div class="section-body">
-      <table class="finding-table">
-        <thead><tr><th>Finding</th><th>Detail</th><th>Source</th><th>Date</th><th>Conf.</th></tr></thead>
-        <tbody>
-          <tr><td>TAS first-year total cost: ~US$41,000 for a 4-year-old</td><td>NTD ~1,300,026; includes one-time fees; one of Asia's highest</td><td>International Schools Database</td><td>2025–2026</td><td class="conf-high">High</td></tr>
-          <tr><td>Morrison Academy first-year: ~US$19,500</td><td>NTD ~625,500 for a 5-year-old; significantly more affordable than TAS</td><td>International Schools Database</td><td>2025–2026</td><td class="conf-high">High</td></tr>
-          <tr><td>General fee range: US$18,000–US$39,000/yr</td><td>Lower end Early Years; upper end IB Diploma/High School</td><td>iSchoolAdvisor Taipei</td><td>2026</td><td class="conf-med">Med</td></tr>
-          <tr><td>More affordable than Singapore, Tokyo, HK</td><td>Genuine competitive advantage for Taipei vs. other APAC hubs</td><td>iSchoolAdvisor</td><td>2026</td><td class="conf-med">Med</td></tr>
-          <tr><td>Revenue concentration risk: small Western expat base</td><td>~21,000 Western expats; enrollment base concentrated in tech/government/military assignees</td><td>Expat.com / Statista</td><td>2023–2025</td><td class="conf-med">Med</td></tr>
-        </tbody>
-      </table>
+  <div class="section">
+    <div class="sh" onclick="tog(this)"><span class="st">👥 People Risks<span class="risk rh">High</span></span><span class="stog">▼</span></div>
+    <div class="sb">
+      <table class="data-table"><thead><tr><th>Finding</th><th>Detail</th><th>Source</th><th>Date</th></tr></thead><tbody>
+        <tr><td>US immigration crackdown reduces American teacher pipeline</td><td>American teachers constitute a major share of staff at US-curriculum Taiwan schools; F/J visa complications and social media screening are deterrents</td><td>Fragomen / HEPI</td><td>2025–2026</td></tr>
+        <tr><td>Teacher compensation competitive vs SEA peers</td><td>Taiwan's lower cost of living vs Singapore/HK makes packages competitive; however absolute salaries lower than Gulf markets</td><td>iSchoolAdvisor / expat guides</td><td>2026</td></tr>
+        <tr><td>Geopolitical risk discourages long-term staff commitment</td><td>Teachers weighing posting duration given cross-strait uncertainty; shorter contracts; reluctance to purchase property</td><td>Assessment</td><td>2026</td></tr>
+        <tr><td>Limited local teacher pipeline for Western curriculum</td><td>Taiwan domestic teacher training oriented to national curriculum; international school-qualified local teachers scarce</td><td>Assessment</td><td>2026</td></tr>
+      </tbody></table>
     </div>
   </div>
 
-  <!-- Regulatory -->
-  <div class="section-card">
-    <div class="section-header" onclick="toggleSection(this)">
-      <div class="section-title">
-        📋 Regulatory &amp; Ownership Framework
-        <span class="risk-badge risk-medium">🟡 Medium — Stable</span>
-      </div>
-      <span class="section-toggle">▼</span>
-    </div>
-    <div class="section-body">
-      <table class="finding-table">
-        <thead><tr><th>Finding</th><th>Detail</th><th>Source</th><th>Date</th><th>Conf.</th></tr></thead>
-        <tbody>
-          <tr><td>Schools for International Residents (SIR) framework</td><td>MOE + MOFA approval chain required; reciprocity clause — founder's home country must grant equivalent rights to ROC nationals</td><td>Taiwan MOJ / MOE</td><td>Current</td><td class="conf-high">High</td></tr>
-          <tr><td>Enrolment priority: home-country nationals first</td><td>SIRs must primarily enrol nationals of the founding country; remaining places open to others</td><td>Taiwan MOJ</td><td>Current</td><td class="conf-high">High</td></tr>
-          <tr><td>No major 2025 regulatory changes identified</td><td>Framework stable; no new restrictions on foreign ownership or curriculum</td><td>Assessment</td><td>2025</td><td class="conf-med">Med</td></tr>
-          <tr><td>Admission timelines: Oct–Dec for Aug following year</td><td>Standard competitive admissions cycle; late applicants risk waitlisting at TAS</td><td>iSchoolAdvisor Taipei</td><td>2026</td><td class="conf-med">Med</td></tr>
-        </tbody>
-      </table>
+  <div class="section">
+    <div class="sh" onclick="tog(this)"><span class="st">📋 Regulatory &amp; Ownership Framework<span class="risk rm">Medium</span></span><span class="stog">▼</span></div>
+    <div class="sb">
+      <table class="data-table"><thead><tr><th>Finding</th><th>Detail</th><th>Source</th><th>Date</th></tr></thead><tbody>
+        <tr><td>Schools for International Residents (SIR) framework</td><td>MOE + MOFA approval chain required; reciprocity clause — founder's home country must grant equivalent rights to ROC nationals</td><td>Taiwan MOJ / MOE</td><td>Current</td></tr>
+        <tr><td>Enrolment priority: home-country nationals first</td><td>SIRs must primarily enrol nationals of the founding country; remaining places open to others</td><td>Taiwan MOJ</td><td>Current</td></tr>
+        <tr><td>No major 2025 regulatory changes identified</td><td>Framework stable; no new restrictions on foreign ownership or curriculum detected</td><td>Assessment</td><td>2025</td></tr>
+        <tr><td>Standard admissions cycle: Oct–Dec for following August</td><td>Late applicants risk waitlisting at TAS and other over-subscribed schools</td><td>iSchoolAdvisor Taipei</td><td>2026</td></tr>
+      </tbody></table>
     </div>
   </div>
 
-  <!-- Trend Analysis Taiwan -->
-  <div class="section-card">
-    <div class="section-header" onclick="toggleSection(this)">
-      <div class="section-title">📅 Trend Horizon Analysis — Taiwan</div>
-      <span class="section-toggle open">▼</span>
-    </div>
-    <div class="section-body open">
-      <table class="trend-table">
-        <thead><tr><th>Horizon</th><th>Key Trend</th><th>Implication for Taiwan International Schools</th></tr></thead>
-        <tbody>
-          <tr><td><span class="horizon-tag">Now &lt;30d</span></td><td>PLA military tempo at multi-year high; carrier transit in Taiwan Strait</td><td>Boards should review emergency/evacuation protocols now; ensure BCPs are current</td></tr>
-          <tr><td><span class="horizon-tag">1–6 months</span></td><td>US immigration reduces American teacher applicant pool</td><td>Begin diversifying recruitment to UK, Australian, Canadian, NZ pipelines</td></tr>
-          <tr><td><span class="horizon-tag">6–18 months</span></td><td>FDI softening → slower expat community growth</td><td>Model enrollment projections under flat to −10% expat community scenarios</td></tr>
-          <tr><td><span class="horizon-tag">18+ months</span></td><td>Cross-strait structural risk unresolved; TSMC ties remain anchor</td><td>Schools serving TSMC/tech sector employees are most resilient; US government/military-linked enrollment most at risk</td></tr>
-        </tbody>
-      </table>
+  <div class="section">
+    <div class="sh" onclick="tog(this)"><span class="st">📋 Market &amp; School Landscape<span class="risk rm">Medium</span></span><span class="stog">▼</span></div>
+    <div class="sb">
+      <table class="data-table"><thead><tr><th>Finding</th><th>Detail</th><th>Source</th><th>Date</th></tr></thead><tbody>
+        <tr><td>16 international schools in Taipei</td><td>Range of curricula: American (AP), IB (PYP/MYP/DP), British (IGCSE/A-level), European</td><td>iSchoolAdvisor / Doris School</td><td>2026</td></tr>
+        <tr><td>TAS: ~2,400 students; most selective and expensive</td><td>WASC-accredited; serves diverse expat community; historically operates near capacity</td><td>International Schools Database</td><td>2025–2026</td></tr>
+        <tr><td>Taiwan offers relative affordability vs APAC peers</td><td>Fees lower than Singapore, Tokyo, Hong Kong; competitive for expat families</td><td>iSchoolAdvisor</td><td>2026</td></tr>
+        <tr><td>Total foreign residents: 812,603 (3.48% of population)</td><td>Western expats ~21,000; enrollment base concentrated in tech/government/military</td><td>NIA Taiwan / Statista</td><td>2023</td></tr>
+      </tbody></table>
     </div>
   </div>
 
+  <div class="section">
+    <div class="sh" onclick="tog(this)"><span class="st">📅 Trend Horizon</span><span class="stog">▼</span></div>
+    <div class="sb">
+      <table class="trend-table"><thead><tr><th>Horizon</th><th>Key Trend</th><th>Implication for Taiwan Schools</th></tr></thead><tbody>
+        <tr><td><span class="hor hn">Now &lt;30d</span></td><td>PLA military tempo at multi-year high</td><td>Boards should review emergency/evacuation protocols now; ensure BCPs are current</td></tr>
+        <tr><td><span class="hor hs">1–6 months</span></td><td>US immigration reduces American teacher applicant pool</td><td>Begin diversifying recruitment to UK, Australian, Canadian, NZ pipelines</td></tr>
+        <tr><td><span class="hor hm">6–18 months</span></td><td>FDI softening → slower expat community growth</td><td>Model enrollment projections under flat to −10% expat community scenarios</td></tr>
+        <tr><td><span class="hor hl">18+ months</span></td><td>Cross-strait structural risk unresolved; TSMC ties remain anchor</td><td>Schools serving TSMC/tech sector employees most resilient; US government/military-linked enrollment most at risk</td></tr>
+      </tbody></table>
+    </div>
+  </div>
+
+  <div class="callout ci">
+    <h4>ℹ️ Information Gaps — Taiwan (Tier 2–3 Sources; Tier 1 Confirmation Recommended)</h4>
+    <ul>
+      <li>ISC Research Taiwan country report subscription-gated: precise enrollment, capacity utilisation, and nationality breakdowns not publicly available</li>
+      <li>TAS enrollment waitlist data not publicly disclosed; community knowledge suggests consistent oversubscription</li>
+      <li>TSMC/tech sector expat community size: no precise count of corporate assignees in semiconductor ecosystem</li>
+      <li>Geopolitical risk insurance: no data found on whether Taiwan schools carry geopolitical contingency or rapid evacuation insurance</li>
+      <li>Local Taiwanese family enrollment share at SIRs: regulatory framework restricts but does not prohibit; actual share unknown</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <div class="sh" onclick="tog(this)"><span class="st">⚡ Emerging Developments (Last 30 Days)</span><span class="stog">▼</span></div>
+    <div class="sb">
+      <div class="em"><strong>Chinese aircraft carrier in Taiwan Strait (April 2026)</strong><span>First carrier transit of 2026; significant escalation signal alongside 202 total aircraft sorties and 190 naval vessels.</span></div>
+      <div class="em"><strong>Taiwan GDP growth revised up to +7.1% for 2025</strong><span>Economy performing strongly on TSMC semiconductor cycle; provides short-term buffer to expat community size and school revenue.</span></div>
+      <div class="em"><strong>US tariff uncertainty adding Taiwan risk premium</strong><span>Multinational FDI softening means fewer new corporate expat postings — indirect negative pressure on school enrollment pipeline.</span></div>
+      <div class="em"><strong>F-1 visa complications (Jan–May 2026)</strong><span>American teachers and US-affiliated families facing social media screening; indirect constraint on Taiwan school staffing and family recruitment.</span></div>
+    </div>
+  </div>
+
+</div></div>
+
+<div class="footer">
+  Research date: 26 May 2026 · agent: web-researcher-schools · Sources: Global sector guide (28 sources) · APAC sector guide (16 sources) · Taiwan sector guide (14 sources) · Confidence: Global/APAC High · Taiwan Medium (subscription data gaps noted)
 </div>
-</div><!-- /tab-taiwan -->
-
-<footer>
-  International School Sector Risk Intelligence · Research date: <strong>May 2026</strong> · Compiled from ISC Research, Crisis Group, NAFSA, ITFCP, GSiE, Teach Away and 60+ sources · For internal research use only
-</footer>
 
 <script>
-// ── Tab switching ──────────────────────────────────────────────
-function switchTab(name, btn) {
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('tab-' + name).classList.add('active');
-  btn.classList.add('active');
-  setTimeout(initCharts, 50); // re-init charts after display
+// Tab switching
+function switchTab(id, el) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  el.classList.add('active');
+  if (!built[id]) { buildCharts(id); built[id] = true; }
 }
 
-// ── Collapsible sections ───────────────────────────────────────
-function toggleSection(header) {
-  const body = header.nextElementSibling;
-  const toggle = header.querySelector('.section-toggle');
-  const isOpen = body.classList.contains('open');
-  body.classList.toggle('open', !isOpen);
-  toggle.classList.toggle('open', !isOpen);
+// Collapsible
+function tog(hdr) {
+  const b = hdr.nextElementSibling;
+  const t = hdr.querySelector('.stog');
+  b.classList.toggle('collapsed');
+  t.textContent = b.classList.contains('collapsed') ? '▶' : '▼';
 }
 
-// ── Charts ─────────────────────────────────────────────────────
-const PALETTE = ['#2980b9','#27ae60','#d35400','#c0392b','#8172b3','#d4a017','#16a085','#2c3e50'];
-let chartsInit = false;
+const built = { global: false, apac: false, taiwan: false };
 
-function initCharts() {
-  if (chartsInit) return;
-  chartsInit = true;
+function buildCharts(id) {
+  if (id === 'global') buildGlobal();
+  if (id === 'apac')   buildApac();
+  if (id === 'taiwan') buildTaiwan();
+}
 
-  // Chart 1 — Global Risk Levels
-  const ctxGR = document.getElementById('chart-global-risk');
-  if (ctxGR) new Chart(ctxGR, {
+function buildGlobal() {
+  new Chart(document.getElementById('g-region'), {
     type: 'doughnut',
     data: {
-      labels: ['🔴 Critical','🟠 High','🟡 Medium','🟢 Low'],
-      datasets: [{ data: [1, 3, 2, 0], backgroundColor: ['#c0392b','#d35400','#d4a017','#27ae60'], borderColor:'#fff', borderWidth:2 }]
+      labels: ['Asia-Pacific (58%)', 'Americas (15%)', 'Europe (14%)', 'Africa (12%)', 'Oceania (2%)'],
+      datasets: [{ data: [58, 15, 14, 12, 2],
+        backgroundColor: ['#1a6eb5','#c8410a','#1a7a4a','#7b3f9e','#d4a017'],
+        borderColor: '#fff', borderWidth: 2 }]
     },
-    options: { responsive:true, maintainAspectRatio:false, cutout:'55%',
-      plugins:{ legend:{ position:'bottom', labels:{ usePointStyle:true, padding:12, font:{size:12} } } }
-    }
+    options: { responsive: true, maintainAspectRatio: false, cutout: '58%',
+      plugins: { legend: { position: 'right', labels: { usePointStyle: true, padding: 12, font: { size: 12 } } },
+        tooltip: { callbacks: { label: ctx => ctx.label } } } }
   });
 
-  // Chart 2 — Global Geo Distribution
-  const ctxGG = document.getElementById('chart-global-geo');
-  if (ctxGG) new Chart(ctxGG, {
-    type: 'doughnut',
-    data: {
-      labels: ['Asia (58%)','Americas (15%)','Europe (14%)','Africa (12%)','Oceania (2%)'],
-      datasets: [{ data: [58,15,14,12,2], backgroundColor: PALETTE, borderColor:'#fff', borderWidth:2 }]
-    },
-    options: { responsive:true, maintainAspectRatio:false, cutout:'55%',
-      plugins:{ legend:{ position:'bottom', labels:{ usePointStyle:true, padding:10, font:{size:11} } } }
-    }
-  });
-
-  // Chart 3 — US Student Decline
-  const ctxUS = document.getElementById('chart-global-students');
-  if (ctxUS) new Chart(ctxUS, {
+  const rColors = { 4:'#c0392b', 3:'#d35400', 2:'#e67e22' };
+  const rScores = [4, 3, 3, 3, 2, 2, 2];
+  new Chart(document.getElementById('g-risk'), {
     type: 'bar',
     data: {
-      labels: ['Pre-COVID\n(2019)','Post-COVID\nRecovery','Fall 2025\n(−17%)','Spring 2026\n(−20%)'],
-      datasets: [{
-        label: 'Relative Enrollment Index',
-        data: [100, 90, 83, 80],
-        backgroundColor: ['#27ae60','#d4a017','#d35400','#c0392b'],
-        borderRadius: 6,
-      }]
+      labels: ['Geopolitical','Financial','People','Safeguarding','Operational','ESG','Market & Competitive'],
+      datasets: [{ data: rScores,
+        backgroundColor: rScores.map(v => rColors[v]),
+        borderRadius: 4, borderSkipped: false }]
     },
-    options: { responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: ctx => `Index: ${ctx.parsed.y}` } } },
-      scales:{ y:{ beginAtZero:false, min:70, max:105, ticks:{ callback: v => v } }, x:{ grid:{display:false} } }
-    }
+    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ['','Low','Medium','High','Critical'][ctx.parsed.x] } } },
+      scales: { x: { min: 0, max: 4.5, ticks: { stepSize: 1, callback: v => ['','Low','Med','High','Crit'][v] || '' } },
+        y: { grid: { display: false } } } }
   });
 
-  // Chart 4 — APAC Market Status (numeric risk score 1=low, 4=critical)
-  const ctxAM = document.getElementById('chart-apac-market');
-  if (ctxAM) new Chart(ctxAM, {
+  new Chart(document.getElementById('g-us'), {
     type: 'bar',
     data: {
-      labels: ['China','Singapore','Malaysia','UAE','Japan','Korea','Vietnam','Indonesia','India','Taiwan'],
-      datasets: [{
-        label: 'Risk Level',
-        data: [4, 2, 1, 1, 2, 2, 2, 2, 2, 2],
-        backgroundColor: ['#c0392b','#d4a017','#27ae60','#27ae60','#d4a017','#d4a017','#d4a017','#d4a017','#d4a017','#d4a017'],
-        borderRadius: 4,
-      }]
+      labels: ['Fall 2024 (baseline)', 'Fall 2025 (−17%)', 'Spring 2026 (−20%)'],
+      datasets: [{ label: 'Indexed enrollment (100 = baseline)',
+        data: [100, 83, 80],
+        backgroundColor: ['#2980b9','#e67e22','#c0392b'], borderRadius: 4 }]
     },
-    options: { responsive:true, maintainAspectRatio:false, indexAxis:'y',
-      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: ctx => ['','Low','Medium','High','Critical'][ctx.parsed.x] } } },
-      scales:{ x:{ min:0, max:4, ticks:{ callback: v => ['','Low','Med','High','Crit'][v]||'' } }, y:{ grid:{display:false} } }
-    }
+    options: { responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { min: 60, max: 110, ticks: { callback: v => v } }, x: { grid: { display: false } } } }
   });
 
-  // Chart 5 — Fee Comparison APAC
-  const ctxAF = document.getElementById('chart-apac-fees');
-  if (ctxAF) new Chart(ctxAF, {
+  new Chart(document.getElementById('g-scale'), {
     type: 'bar',
     data: {
-      labels: ['Singapore (avg)','Tokyo (est.)','Hong Kong (est.)','Taipei TAS','Taipei (avg)','KL Malaysia (avg)'],
-      datasets: [{
-        label: 'Annual Fees (USD)',
-        data: [37000, 35000, 33000, 41000, 28000, 18000],
-        backgroundColor: ['#2980b9','#8172b3','#16a085','#d4a017','#d4a017','#27ae60'],
-        borderRadius: 4,
-      }]
+      labels: ['Schools\n(thousands)', 'Students\n(millions)', 'Staff\n(thousands ÷10)', 'Fee Income\n(USD billions)'],
+      datasets: [{ data: [15.075, 7.7, 73.0, 69.3],
+        backgroundColor: ['#1a6eb5','#1a7a4a','#7b3f9e','#d4a017'], borderRadius: 4 }]
     },
-    options: { responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: ctx => `US$${ctx.parsed.y.toLocaleString()}/yr` } } },
-      scales:{ y:{ beginAtZero:true, ticks:{ callback: v => `$${(v/1000).toFixed(0)}K` } }, x:{ grid:{display:false} } }
-    }
-  });
-
-  // Chart 6 — Taiwan Fee Comparison
-  const ctxTF = document.getElementById('chart-tw-fees');
-  if (ctxTF) new Chart(ctxTF, {
-    type: 'bar',
-    data: {
-      labels: ['TAS (TW)','Singapore\n(avg)','Tokyo\n(est.)','Morrison (TW)','KL Malaysia\n(avg)','Taipei\n(other avg)'],
-      datasets: [{
-        label: 'Annual Fees (USD)',
-        data: [41000, 37000, 35000, 19500, 18000, 28000],
-        backgroundColor: ['#d4a017','#2980b9','#8172b3','#27ae60','#27ae60','#d35400'],
-        borderRadius: 5,
-      }]
-    },
-    options: { responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: ctx => `US$${ctx.parsed.y.toLocaleString()}/yr` } } },
-      scales:{ y:{ beginAtZero:true, ticks:{ callback: v => `$${(v/1000).toFixed(0)}K` } }, x:{ grid:{display:false}, ticks:{font:{size:11}} } }
-    }
-  });
-
-  // Chart 7 — Taiwan Risk Profile
-  const ctxTR = document.getElementById('chart-tw-risk');
-  if (ctxTR) new Chart(ctxTR, {
-    type: 'radar',
-    data: {
-      labels: ['Geopolitical','Financial\n(tail)','People','Market','Regulatory','Reputational'],
-      datasets: [{
-        label: 'Risk Score (1–4)',
-        data: [4, 3, 3, 2, 2, 2],
-        backgroundColor: 'rgba(192,57,43,0.15)',
-        borderColor: '#c0392b',
-        borderWidth: 2,
-        pointBackgroundColor: '#c0392b',
-        pointRadius: 5,
-      }]
-    },
-    options: { responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{display:false} },
-      scales:{ r:{ min:0, max:4, ticks:{ callback: v => ['','Low','Med','High','Crit'][v]||'', stepSize:1 }, grid:{ color:'rgba(0,0,0,0.07)' } } }
-    }
-  });
-
-  // Chart 8 — PLA Activity
-  const ctxPLA = document.getElementById('chart-tw-pla');
-  if (ctxPLA) new Chart(ctxPLA, {
-    type: 'bar',
-    data: {
-      labels: ['2022\n(Aug)', '2023\n(Apr)', '2024\n(Oct)', 'Dec 2025\n(War game)', 'Apr 2026\n(Latest)'],
-      datasets: [{
-        label: 'PLA Aircraft Sorties / Naval Vessels',
-        data: [150, 71, 125, 90, 202],
-        backgroundColor: ['#d35400','#d4a017','#d35400','#c0392b','#c0392b'],
-        borderRadius: 4,
-      }]
-    },
-    options: { responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: ctx => `${ctx.parsed.y} aircraft/vessels detected` } } },
-      scales:{ y:{ beginAtZero:true }, x:{ grid:{display:false} } }
-    }
+    options: { responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false },
+        tooltip: { callbacks: { label: ctx => {
+          const v = ['15,075 schools','7.7M students','730,000 staff','$69.3B fee income'];
+          return v[ctx.dataIndex];
+        }}}},
+      scales: { y: { beginAtZero: true }, x: { grid: { display: false }, ticks: { font: { size: 10 } } } } }
   });
 }
 
-// init on load
-window.addEventListener('load', initCharts);
+function buildApac() {
+  const countries = ['China','Singapore','Malaysia (KL)','UAE','Japan','South Korea','Vietnam','Indonesia','India','Kazakhstan'];
+  const scores    = [4, 2, 1.5, 1, 2, 2, 2, 2, 2, 1.5];
+  const colors    = scores.map(v => v >= 4 ? '#c0392b' : v >= 3 ? '#d35400' : v >= 2 ? '#e67e22' : '#27ae60');
+
+  new Chart(document.getElementById('a-country'), {
+    type: 'bar',
+    data: { labels: countries, datasets: [{ data: scores, backgroundColor: colors, borderRadius: 4, borderSkipped: false }] },
+    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ({ 4:'Critical 🔴', 3:'High 🟠', 2:'Medium 🟡', 1.5:'Low–Medium 🟢', 1:'Low 🟢' })[ctx.parsed.x] || '' } } },
+      scales: { x: { min: 0, max: 4.5, ticks: { stepSize: 1, callback: v => ['','Low','Med','High','Crit'][v] || '' } },
+        y: { grid: { display: false } } } }
+  });
+
+  new Chart(document.getElementById('a-fees'), {
+    type: 'bar',
+    data: {
+      labels: ['KL Primary (avg)', 'SG Equivalent', 'KL IB Lower', 'KL IB Upper', 'KL Premium Sec'],
+      datasets: [
+        { label: 'KL (USD)', data: [14000, null, 7700, 18700, 25000], backgroundColor: '#1a7a4a', borderRadius: 4 },
+        { label: 'Singapore (USD)', data: [null, 26000, null, null, null], backgroundColor: '#1a6eb5', borderRadius: 4 }
+      ]
+    },
+    options: { responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'top', labels: { usePointStyle: true, font: { size: 11 } } },
+        tooltip: { callbacks: { label: ctx => ctx.parsed.y ? `~USD ${ctx.parsed.y.toLocaleString()}` : '' } } },
+      scales: { y: { beginAtZero: true, ticks: { callback: v => '$' + (v/1000) + 'K' } },
+        x: { grid: { display: false }, ticks: { font: { size: 10 } } } } }
+  });
+}
+
+function buildTaiwan() {
+  new Chart(document.getElementById('t-pla'), {
+    type: 'bar',
+    data: {
+      labels: ['Total PLA Aircraft (Apr 2026)', 'Crossed Median / ADIZ', 'Naval Vessels (Apr 2026)'],
+      datasets: [{ data: [202, 145, 190],
+        backgroundColor: ['#c0392b','#e74c3c','#8e44ad'], borderRadius: 4 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { stepSize: 50 } }, x: { grid: { display: false }, ticks: { font: { size: 11 } } } } }
+  });
+
+  new Chart(document.getElementById('t-fees'), {
+    type: 'bar',
+    data: {
+      labels: ['TAS (4yo,\nfirst year)', 'Morrison\n(5yo, first year)', 'Market lower\nbound /yr', 'Market upper\nbound /yr'],
+      datasets: [{ label: 'USD', data: [41000, 19500, 18000, 39000],
+        backgroundColor: ['#1a6eb5','#1a7a4a','#7b3f9e','#d4a017'], borderRadius: 4 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false },
+        tooltip: { callbacks: { label: ctx => '$' + ctx.parsed.y.toLocaleString() + ' USD' } } },
+      scales: { y: { beginAtZero: true, ticks: { callback: v => '$' + (v/1000) + 'K' } },
+        x: { grid: { display: false }, ticks: { font: { size: 10 } } } } }
+  });
+}
+
+// Init on load
+window.addEventListener('DOMContentLoaded', () => {
+  buildGlobal();
+  built.global = true;
+});
 </script>
 </body>
 </html>
