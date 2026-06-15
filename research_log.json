@@ -1,0 +1,105 @@
+{
+  "sessions": [
+    {
+      "session_date": "2026-05-26",
+      "topic": "global-sector-guide",
+      "geographic_focus": "global",
+      "version": "v2-updated-skill",
+      "risk_categories_covered": ["financial", "market", "people", "safeguarding", "geopolitical", "operational", "esg", "reputational", "competitive"],
+      "searches": [
+        "international schools market 2026 ISC Research enrollment growth global statistics",
+        "international school teacher shortage recruitment retention 2025 2026",
+        "international school safeguarding child protection ITFCP 2025 2026",
+        "international school USAID cuts enrollment impact 2025 US-sponsored schools",
+        "international school private equity ownership financial sustainability EBITDA 2025 2026",
+        "international school ESG sustainability parents investors 2025 2026",
+        "international school geopolitical risk US immigration visa policy expat families 2025 2026",
+        "international schools sector trends 2026 competitive landscape accreditation cybersecurity",
+        "international school tuition fees enrollment decline financial risk 2025 2026"
+      ],
+      "source_count": 28,
+      "output_file": "findings/web-researcher-schools_global-sector-guide_2026-05-26.md",
+      "confidence": "high",
+      "new_variables": [
+        "global_school_count_2026",
+        "global_fee_income_2026",
+        "global_student_enrollment_2026",
+        "global_staff_count_2026",
+        "teacher_burnout_consideration_rate",
+        "licensure_program_recruitment_factor",
+        "pe_valuation_ebitda_multiple_range",
+        "isp_school_count_2025",
+        "us_new_international_student_decline_spring_2026",
+        "usaid_nonprofit_budget_dependency_rate",
+        "esg_parent_investor_priority_rate",
+        "international_school_pe_group_affiliation_rate",
+        "bilingual_provision_rate"
+      ],
+      "refresh_after": "2026-06-02"
+    },
+    {
+      "session_date": "2026-05-26",
+      "topic": "apac-sector-guide",
+      "geographic_focus": "Asia-Pacific",
+      "version": "v1",
+      "risk_categories_covered": ["financial", "market", "people", "geopolitical", "regulatory", "competitive"],
+      "searches": [
+        "Asia-Pacific international schools enrollment growth market 2025 2026 ISC Research ICEF",
+        "China education competition international schools Asia 2025 2026 local Chinese schools pressure",
+        "Singapore Malaysia international schools market 2025 2026 fees enrollment competition",
+        "East Asia international schools stalling China flatline ISC Research 2025 2026",
+        "Asia-Pacific international school teacher recruitment shortage 2025 2026 Southeast Asia",
+        "Japan South Korea UAE international schools growth competition 2025 2026 APAC",
+        "APAC international school regulatory risk local hire ownership rules Thailand Vietnam Indonesia 2025"
+      ],
+      "source_count": 16,
+      "output_file": "findings/web-researcher-schools_apac-sector-guide_2026-05-26.md",
+      "confidence": "high",
+      "new_variables": [
+        "apac_school_share_global_2026",
+        "southeast_asia_western_asia_5yr_growth",
+        "china_accredited_intl_schools_2025",
+        "southeast_asia_teacher_shortage_count",
+        "vietnam_foreign_teacher_permit_growth_2025",
+        "uae_school_growth_rate_2026",
+        "uae_planned_new_schools",
+        "malaysia_vs_singapore_fee_differential",
+        "china_tne_enrollment_target",
+        "apac_he_intl_enrollment_growth_share"
+      ],
+      "refresh_after": "2026-06-02"
+    },
+    {
+      "session_date": "2026-05-26",
+      "topic": "taiwan-sector-guide",
+      "geographic_focus": "Taiwan",
+      "version": "v1",
+      "risk_categories_covered": ["financial", "market", "people", "geopolitical", "regulatory", "reputational"],
+      "searches": [
+        "Taiwan international schools 2025 2026 enrollment expat families",
+        "Taiwan cross-strait tensions geopolitical risk international schools expat departure 2025 2026",
+        "Taiwan international school regulation foreign school ownership rules 2025",
+        "Taipei American School Morrison Academy Taiwan enrollment fees 2025 2026 capacity",
+        "Taiwan geopolitical risk business expat community international school impact 2025",
+        "Taiwan expat population trend 2025 2026 departure relocation geopolitical",
+        "international school Taiwan waiting list full capacity enrollment site:tieonline.com OR site:iscresearch.com 2025"
+      ],
+      "source_count": 14,
+      "confidence": "medium",
+      "notes": "Taiwan ISC country data subscription-gated; geopolitical risk high; Tier 2-3 sources used for school-level details",
+      "output_file": "findings/web-researcher-schools_taiwan-sector-guide_2026-05-26.md",
+      "new_variables": [
+        "taiwan_intl_schools_taipei_count",
+        "taiwan_western_expat_population",
+        "taiwan_total_foreign_residents",
+        "tas_annual_first_year_cost_ntd",
+        "morrison_annual_first_year_cost_ntd",
+        "taiwan_tuition_range_usd",
+        "taiwan_cross_strait_pla_aircraft_apr2026",
+        "taiwan_gdp_growth_2025",
+        "taiwan_pla_naval_vessels_apr2026"
+      ],
+      "refresh_after": "2026-06-02"
+    }
+  ]
+}
